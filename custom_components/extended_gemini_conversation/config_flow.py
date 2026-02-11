@@ -1,4 +1,4 @@
-"""Config flow for OpenAI Conversation integration."""
+"""Config flow for Gemini Conversation integration."""
 
 from __future__ import annotations
 
@@ -6,7 +6,6 @@ import logging
 import types
 from typing import Any
 
-from openai._exceptions import APIConnectionError, AuthenticationError
 import voluptuous as vol
 import yaml
 
@@ -83,7 +82,7 @@ _LOGGER = logging.getLogger(__name__)
 
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
-        vol.Optional(CONF_NAME, default="ChatGPT"): str,
+        vol.Optional(CONF_NAME, default="Gemini"): str,
         vol.Required(CONF_API_KEY): str,
         vol.Optional(CONF_BASE_URL, default=DEFAULT_CONF_BASE_URL): str,
         vol.Optional(CONF_API_VERSION): str,
@@ -137,12 +136,9 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> None:
     api_provider = data.get(CONF_API_PROVIDER)
 
     if base_url == DEFAULT_CONF_BASE_URL:
-        # Do not set base_url if using OpenAI for case of OpenAI's base_url change
+        # Use default Gemini base URL
         base_url = None
         data.pop(CONF_BASE_URL)
-
-    if api_provider == "azure" and not base_url:
-        raise HomeAssistantError("Azure OpenAI requires a custom base URL.")
 
     await get_authenticated_client(
         hass=hass,
@@ -156,7 +152,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> None:
 
 
 class ExtendedOpenAIConversationConfigFlow(ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for OpenAI Conversation."""
+    """Handle a config flow for Gemini Conversation."""
 
     VERSION = 2
 
@@ -173,13 +169,12 @@ class ExtendedOpenAIConversationConfigFlow(ConfigFlow, domain=DOMAIN):
 
         try:
             await validate_input(self.hass, user_input)
-        except APIConnectionError:
-            errors["base"] = "cannot_connect"
-        except AuthenticationError:
-            errors["base"] = "invalid_auth"
-        except Exception:  # pylint: disable=broad-except
-            _LOGGER.exception("Unexpected exception")
-            errors["base"] = "unknown"
+        except Exception as err:  # pylint: disable=broad-except
+            _LOGGER.exception("Unexpected exception: %s", err)
+            if "authentication" in str(err).lower() or "api" in str(err).lower():
+                errors["base"] = "invalid_auth"
+            else:
+                errors["base"] = "cannot_connect"
         else:
             return self.async_create_entry(
                 title=user_input.get(CONF_NAME, DEFAULT_NAME),
@@ -217,7 +212,7 @@ class ExtendedOpenAIConversationConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class ExtendedOpenAISubentryFlowHandler(ConfigSubentryFlow):
-    """Flow for managing OpenAI subentries."""
+    """Flow for managing Gemini subentries."""
 
     options: dict[str, Any]
     _temp_data: dict[str, Any] | None = None
@@ -348,7 +343,7 @@ class ExtendedOpenAISubentryFlowHandler(ConfigSubentryFlow):
                 )
             )
 
-        # Add service_tier if supported (o3, o4, gpt-5 models)
+        # Add service_tier if supported by model
         if model_config.get("supports_service_tier"):
             schema[
                 vol.Optional(
@@ -575,7 +570,7 @@ class ExtendedOpenAIAITaskSubentryFlowHandler(ConfigSubentryFlow):
                 )
             )
 
-        # Add service_tier if supported (o3, o4, gpt-5 models)
+        # Add service_tier if supported by model
         if model_config.get("supports_service_tier"):
             schema[
                 vol.Optional(

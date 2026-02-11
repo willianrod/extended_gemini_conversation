@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 # Import FunctionExecutors and test helpers
-from custom_components.extended_openai_conversation.helpers import (
+from custom_components.extended_gemini_conversation.helpers import (
     ScrapeFunctionExecutor,
     get_function_executor,
 )
@@ -33,10 +33,10 @@ class TestScrapeFunctionExecutorYaml:
 
         with (
             patch(
-                "custom_components.extended_openai_conversation.helpers.rest.create_rest_data_from_config"
+                "custom_components.extended_gemini_conversation.helpers.rest.create_rest_data_from_config"
             ) as mock_rest,
             patch(
-                "custom_components.extended_openai_conversation.helpers.scrape.coordinator.ScrapeCoordinator"
+                "custom_components.extended_gemini_conversation.helpers.scrape.coordinator.ScrapeCoordinator"
             ) as mock_coordinator_class,
         ):
             from bs4 import BeautifulSoup

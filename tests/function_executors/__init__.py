@@ -1,1 +1,1 @@
-"""Tests for FunctionExecutor classes in extended_openai_conversation."""
+"""Tests for FunctionExecutor classes in extended_gemini_conversation."""

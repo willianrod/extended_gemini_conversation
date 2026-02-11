@@ -1,5 +1,5 @@
 {
-  "name": "extended_openai_conversation",
+  "name": "extended_gemini_conversation",
   "render_readme": true,
   "homeassistant": "2026.2.0b0"
 }

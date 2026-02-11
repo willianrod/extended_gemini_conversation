@@ -1,19 +1,19 @@
 {
     "config": {
         "error": {
-            "cannot_connect": "Fehler beim Verbindungsaufbau",
-            "invalid_auth": "Authentifizierung fehlgeschlagen",
-            "unknown": "Unbekannter Fehler"
+            "cannot_connect": "Échec de la connexion",
+            "invalid_auth": "Authentification invalide",
+            "unknown": "Erreur inconnue"
         },
         "step": {
             "user": {
                 "data": {
-                    "name": "Name",
-                    "api_key": "API Key",
-                    "base_url": "Base Url",
-                    "api_version": "Api Version",
+                    "name": "Nom",
+                    "api_key": "Clé d'API",
+                    "base_url": "Base de l'URL",
+                    "api_version": "Version de l'API",
                     "organization": "Organization",
-                    "skip_authentication": "Authentifizierung überspringen",
+                    "skip_authentication": "Ignorer l'authentification",
                     "api_provider": "Api Provider"
                 }
             }
@@ -29,12 +29,12 @@
             "step": {
                 "init": {
                     "data": {
-                        "max_tokens": "Maximale Anzahl an Tokens, die in einer Antwort zurückgegeben werden",
-                        "model": "Completion Model",
-                        "prompt": "Prompt Vorlage",
-                        "max_function_calls_per_conversation": "Maximale Anzahl an Funktionsaufrufen pro Konversation",
-                        "functions": "Funktionen",
-                        "attach_username": "Benutzernamen mitgeben",
+                        "max_tokens": "Nombre maximum de jetons facturé pour la réponse",
+                        "model": "Modèle d'IA",
+                        "prompt": "Prompt",
+                        "max_function_calls_per_conversation": "Nombre maximal d'appels de fonction par conversation",
+                        "functions": "Fonctions",
+                        "attach_username": "Joindre le nom d'utilisateur au message",
                         "context_threshold": "Context Threshold",
                         "context_truncate_strategy": "Context truncation strategy when exceeded threshold",
                         "advanced_options": "Advanced Options"
@@ -44,7 +44,7 @@
                 "advanced": {
                     "title": "Advanced Options",
                     "data": {
-                        "temperature": "Temperatur",
+                        "temperature": "Température",
                         "top_p": "Top P",
                         "reasoning_effort": "Reasoning effort",
                         "service_tier": "Service tier"
@@ -91,7 +91,7 @@
                 "model": {
                     "name": "Model",
                     "description": "The model",
-                    "example": "gpt-4.1-mini"
+                    "example": "gemini-2.5-flash"
                 },
                 "prompt": {
                     "name": "Prompt",
@@ -118,15 +118,15 @@
                     "description": "The config entry to update."
                 },
                 "api_key": {
-                    "name": "API Key",
+                    "name": "Clé d'API",
                     "description": "The API key."
                 },
                 "base_url": {
-                    "name": "Base Url",
+                    "name": "Base de l'URL",
                     "description": "The base URL."
                 },
                 "api_version": {
-                    "name": "Api Version",
+                    "name": "Version de l'API",
                     "description": "The API version."
                 },
                 "organization": {
@@ -134,7 +134,7 @@
                     "description": "The organization."
                 },
                 "skip_authentication": {
-                    "name": "Authentifizierung überspringen",
+                    "name": "Ignorer l'authentification",
                     "description": "Skip authentication."
                 },
                 "api_provider": {

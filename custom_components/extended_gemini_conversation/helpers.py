@@ -1,4 +1,4 @@
-"""Helper functions for Extended OpenAI Conversation component."""
+"""Helper functions for Extended Gemini Conversation component."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from typing import Any
 from urllib import parse
 
 from bs4 import BeautifulSoup
-from openai import AsyncAzureOpenAI, AsyncClient, AsyncOpenAI
+import google.generativeai as genai
 import voluptuous as vol
 import yaml
 
@@ -72,9 +72,6 @@ from .exceptions import (
 _LOGGER = logging.getLogger(__name__)
 
 
-AZURE_DOMAIN_PATTERN = r"\.(openai\.azure\.com|azure-api\.net|services\.ai\.azure\.com)"
-
-
 def get_model_config(model: str) -> dict[str, bool]:
     """Get model-specific parameter configuration."""
     # Check patterns in order; first match wins
@@ -89,7 +86,7 @@ def get_model_config(model: str) -> dict[str, bool]:
                 else DEFAULT_MODEL_CONFIG
             )
 
-    # Default configuration for standard models (gpt-4, gpt-4o, etc.)
+    # Default configuration for Gemini models
     return DEFAULT_MODEL_CONFIG
 
 
@@ -126,11 +123,6 @@ def get_function_executor(value: str) -> FunctionExecutor:
     if function_executor is None:
         raise FunctionNotFound(value)
     return function_executor
-
-
-def is_azure_url(base_url: str | None) -> bool:
-    """Check if the base URL is an Azure OpenAI URL."""
-    return bool(base_url and re.search(AZURE_DOMAIN_PATTERN, base_url))
 
 
 def get_token_param_for_model(model: str) -> str:
@@ -211,36 +203,25 @@ async def get_authenticated_client(
     organization: str | None,
     api_provider: str | None,
     skip_authentication: bool = False,
-) -> AsyncClient:
-    """Validate OpenAI authentication."""
-
-    client: AsyncClient
-    if base_url and (is_azure_url(base_url) or api_provider == "azure"):
-        client = AsyncAzureOpenAI(
-            api_key=api_key,
-            azure_endpoint=base_url,
-            api_version=api_version,
-            organization=organization,
-            http_client=get_async_client(hass),
-        )
-    else:
-        client = AsyncOpenAI(
-            api_key=api_key,
-            base_url=base_url,
-            organization=organization,
-            http_client=get_async_client(hass),
-        )
-
-    if skip_authentication:
-        return client
-
-    response = await hass.async_add_executor_job(
-        partial(client.models.list, timeout=10)
-    )
-
-    async for _ in response:
-        break
-    return client
+) -> genai.GenerativeModel:
+    """Validate Gemini authentication and return a configured client."""
+    
+    # Configure the Gemini client with API key
+    genai.configure(api_key=api_key)
+    
+    if not skip_authentication:
+        # Test authentication by listing models
+        try:
+            await hass.async_add_executor_job(
+                partial(genai.list_models)
+            )
+        except Exception as err:
+            _LOGGER.error("Failed to authenticate with Gemini API: %s", err)
+            raise
+    
+    # Return a dummy client - we'll create the actual model instance when needed
+    # This is just to maintain compatibility with the existing structure
+    return genai
 
 
 class FunctionExecutor(ABC):
@@ -566,9 +547,9 @@ class ScriptFunctionExecutor(FunctionExecutor):
         script = Script(
             hass,
             function["sequence"],
-            "extended_openai_conversation",
+            "extended_gemini_conversation",
             DOMAIN,
-            running_description="[extended_openai_conversation] function",
+            running_description="[extended_gemini_conversation] function",
             logger=_LOGGER,
         )
 

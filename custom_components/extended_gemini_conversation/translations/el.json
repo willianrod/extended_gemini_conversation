@@ -1,19 +1,19 @@
 {
     "config": {
         "error": {
-            "cannot_connect": "Não é possível ligar",
-            "invalid_auth": "Autenticação inválida",
-            "unknown": "Erro desconhecido"
+            "cannot_connect": "Αποτυχία σύνδεσης",
+            "invalid_auth": "Μη έγκυρος έλεγχος ταυτότητας",
+            "unknown": "Απροσδόκητο σφάλμα"
         },
         "step": {
             "user": {
                 "data": {
-                    "name": "Nome",
-                    "api_key": "Chave API",
-                    "base_url": "Base Url",
-                    "api_version": "Versão da API",
-                    "organization": "Organização",
-                    "skip_authentication": "Saltar autenticação",
+                    "name": "Όνομα",
+                    "api_key": "Κλειδί API",
+                    "base_url": "Βασική Διεύθυνση",
+                    "api_version": "Έκδοση API",
+                    "organization": "Οργανισμός",
+                    "skip_authentication": "Παράλειψη Ελέγχου Ταυτότητας",
                     "api_provider": "Api Provider"
                 }
             }
@@ -29,14 +29,14 @@
             "step": {
                 "init": {
                     "data": {
-                        "max_tokens": "Número máximo de tokens da resposta",
-                        "model": "Modelo da Conclusão",
-                        "prompt": "Template do Prompt",
-                        "max_function_calls_per_conversation": "Quantidade máxima de chamadas por conversação",
-                        "functions": "Funções",
-                        "attach_username": "Anexar nome do usuário na mensagem",
-                        "context_threshold": "Limite do contexto",
-                        "context_truncate_strategy": "Estratégia de limite de contexto quando o limite é excedido",
+                        "max_tokens": "Μέγιστα tokens προς επιστροφή στην απάντηση",
+                        "model": "Μοντέλο Ολοκλήρωσης",
+                        "prompt": "Πρότυπο Προτροπής",
+                        "max_function_calls_per_conversation": "Μέγιστες κλήσεις συναρτήσεων ανά συνομιλία",
+                        "functions": "Συναρτήσεις",
+                        "attach_username": "Επισύναψη Ονόματος Χρήστη στο Μήνυμα",
+                        "context_threshold": "Όριο Περιεχομένου",
+                        "context_truncate_strategy": "Στρατηγική περικοπής περιεχομένου όταν ξεπεραστεί το όριο",
                         "advanced_options": "Advanced Options"
                     },
                     "data_description": {}
@@ -44,7 +44,7 @@
                 "advanced": {
                     "title": "Advanced Options",
                     "data": {
-                        "temperature": "Temperatura",
+                        "temperature": "Θερμοκρασία",
                         "top_p": "Top P",
                         "reasoning_effort": "Reasoning effort",
                         "service_tier": "Service tier"
@@ -81,30 +81,30 @@
     },
     "services": {
         "query_image": {
-            "name": "Consultar imagem",
-            "description": "Receber imagens e responda perguntas sobre elas",
+            "name": "Ερώτημα εικόνας",
+            "description": "Λάβετε εικόνες και απαντήστε ερωτήσεις για αυτές",
             "fields": {
                 "config_entry": {
-                    "name": "Registro de configuração",
-                    "description": "O registo de configuração para utilizar neste serviço"
+                    "name": "Καταχώρηση Διαμόρφωσης",
+                    "description": "Η καταχώρηση διαμόρφωσης που θα χρησιμοποιηθεί για αυτή την υπηρεσία"
                 },
                 "model": {
-                    "name": "Modelo",
-                    "description": "Especificar modelo",
-                    "example": "gpt-4.1-mini"
+                    "name": "Μοντέλο",
+                    "description": "Το μοντέλο",
+                    "example": "gemini-2.5-flash"
                 },
                 "prompt": {
-                    "name": "Prompt",
-                    "description": "O texto para fazer a pergunta sobre a imagem",
-                    "example": "O que tem nesta imagem?"
+                    "name": "Προτροπή",
+                    "description": "Το κείμενο για να ρωτήσετε σχετικά με την εικόνα",
+                    "example": "Τι υπάρχει σε αυτή την εικόνα;"
                 },
                 "images": {
-                    "name": "Imagens",
-                    "description": "Uma lista de imagens que serão analisadas"
+                    "name": "Εικόνες",
+                    "description": "Μια λίστα εικόνων που θα ερωτηθούν"
                 },
                 "max_tokens": {
-                    "name": "Max Tokens",
-                    "description": "Quantidade máxima de tokens",
+                    "name": "Μέγιστα Tokens",
+                    "description": "Τα μέγιστα tokens",
                     "example": "300"
                 }
             }
@@ -118,23 +118,23 @@
                     "description": "The config entry to update."
                 },
                 "api_key": {
-                    "name": "Chave API",
+                    "name": "Κλειδί API",
                     "description": "The API key."
                 },
                 "base_url": {
-                    "name": "Base Url",
+                    "name": "Βασική Διεύθυνση",
                     "description": "The base URL."
                 },
                 "api_version": {
-                    "name": "Versão da API",
+                    "name": "Έκδοση API",
                     "description": "The API version."
                 },
                 "organization": {
-                    "name": "Organização",
+                    "name": "Οργανισμός",
                     "description": "The organization."
                 },
                 "skip_authentication": {
-                    "name": "Saltar autenticação",
+                    "name": "Παράλειψη Ελέγχου Ταυτότητας",
                     "description": "Skip authentication."
                 },
                 "api_provider": {

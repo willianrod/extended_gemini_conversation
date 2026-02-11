@@ -1,19 +1,19 @@
 {
     "config": {
         "error": {
-            "cannot_connect": "Failed to connect",
-            "invalid_auth": "Invalid authentication",
-            "unknown": "Unexpected error"
+            "cannot_connect": "Nem sikerült csatlakozni",
+            "invalid_auth": "Azonosítás sikertelen",
+            "unknown": "Váratlan hiba"
         },
         "step": {
             "user": {
                 "data": {
-                    "name": "Name",
-                    "api_key": "API Key",
+                    "name": "Név",
+                    "api_key": "API Kulcs",
                     "base_url": "Base Url",
-                    "api_version": "Api Version",
+                    "api_version": "API Verzió",
                     "organization": "Organization",
-                    "skip_authentication": "Skip Authentication",
+                    "skip_authentication": "Azonosítás átugrása",
                     "api_provider": "Api Provider"
                 }
             }
@@ -29,12 +29,12 @@
             "step": {
                 "init": {
                     "data": {
-                        "max_tokens": "Maximum tokens to return in response",
-                        "model": "Completion Model",
-                        "prompt": "Prompt Template",
-                        "max_function_calls_per_conversation": "Maximum function calls per conversation",
-                        "functions": "Functions",
-                        "attach_username": "Attach Username to Message",
+                        "max_tokens": "A válaszként viszaküldhető maximum tokenek száma",
+                        "model": "Model",
+                        "prompt": "Kiindulási szöveg sablon",
+                        "max_function_calls_per_conversation": "Beszélgetésenkénti maximum funkcióhívások száma",
+                        "functions": "Funkciók",
+                        "attach_username": "Felhasználónév hozzácsatolása az üzenethez",
                         "context_threshold": "Context Threshold",
                         "context_truncate_strategy": "Context truncation strategy when exceeded threshold",
                         "advanced_options": "Advanced Options"
@@ -44,14 +44,10 @@
                 "advanced": {
                     "title": "Advanced Options",
                     "data": {
-                        "temperature": "Temperature",
+                        "temperature": "Hőmérséklet",
                         "top_p": "Top P",
                         "reasoning_effort": "Reasoning effort",
-                        "service_tier": "Service tier",
-                        "shorten_tool_call_id": "Shorten tool call IDs"
-                    },
-                    "data_description": {
-                        "shorten_tool_call_id": "Required for Mistral AI cloud API compatibility. Enable only if your provider requires short (9-character) tool call IDs. Keep disabled for OpenAI and most other providers."
+                        "service_tier": "Service tier"
                     }
                 }
             }
@@ -77,11 +73,7 @@
                         "temperature": "Temperature",
                         "top_p": "Top P",
                         "reasoning_effort": "Reasoning effort",
-                        "service_tier": "Service tier",
-                        "shorten_tool_call_id": "Shorten tool call IDs"
-                    },
-                    "data_description": {
-                        "shorten_tool_call_id": "Required for Mistral AI cloud API compatibility. Enable only if your provider requires short (9-character) tool call IDs. Keep disabled for OpenAI and most other providers."
+                        "service_tier": "Service tier"
                     }
                 }
             }
@@ -99,7 +91,7 @@
                 "model": {
                     "name": "Model",
                     "description": "The model",
-                    "example": "gpt-4.1-mini"
+                    "example": "gemini-2.5-flash"
                 },
                 "prompt": {
                     "name": "Prompt",
@@ -126,7 +118,7 @@
                     "description": "The config entry to update."
                 },
                 "api_key": {
-                    "name": "API Key",
+                    "name": "API Kulcs",
                     "description": "The API key."
                 },
                 "base_url": {
@@ -134,7 +126,7 @@
                     "description": "The base URL."
                 },
                 "api_version": {
-                    "name": "Api Version",
+                    "name": "API Verzió",
                     "description": "The API version."
                 },
                 "organization": {
@@ -142,7 +134,7 @@
                     "description": "The organization."
                 },
                 "skip_authentication": {
-                    "name": "Skip Authentication",
+                    "name": "Azonosítás átugrása",
                     "description": "Skip authentication."
                 },
                 "api_provider": {

@@ -1,1 +1,1 @@
-"""Tests for extended_openai_conversation custom component."""
+"""Tests for extended_gemini_conversation custom component."""

@@ -1,4 +1,4 @@
-"""Fixtures for extended_openai_conversation tests."""
+"""Fixtures for extended_gemini_conversation tests."""
 
 from pathlib import Path
 import sys

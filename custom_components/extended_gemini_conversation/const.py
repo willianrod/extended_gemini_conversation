@@ -1,102 +1,53 @@
-"""Constants for the Extended OpenAI Conversation integration."""
+"""Constants for the Extended Gemini Conversation integration."""
 
-DOMAIN = "extended_openai_conversation"
-DEFAULT_NAME = "Extended OpenAI Conversation"
-DEFAULT_CONVERSATION_NAME = "Extended OpenAI Conversation"
-DEFAULT_AI_TASK_NAME = "Extended OpenAI AI Task"
+DOMAIN = "extended_gemini_conversation"
+DEFAULT_NAME = "Extended Gemini Conversation"
+DEFAULT_CONVERSATION_NAME = "Extended Gemini Conversation"
+DEFAULT_AI_TASK_NAME = "Extended Gemini AI Task"
 
 CONF_ORGANIZATION = "organization"
 CONF_BASE_URL = "base_url"
-DEFAULT_CONF_BASE_URL = "https://api.openai.com/v1"
+DEFAULT_CONF_BASE_URL = "https://generativelanguage.googleapis.com"
 CONF_API_VERSION = "api_version"
 CONF_SKIP_AUTHENTICATION = "skip_authentication"
 DEFAULT_SKIP_AUTHENTICATION = False
 CONF_API_PROVIDER = "api_provider"
 API_PROVIDERS = [
-    {"key": "openai", "label": "OpenAI"},
-    {"key": "azure", "label": "Azure OpenAI"},
+    {"key": "google", "label": "Google Gemini"},
 ]
 DEFAULT_API_PROVIDER = API_PROVIDERS[0]["key"]
 
-EVENT_AUTOMATION_REGISTERED = "automation_registered_via_extended_openai_conversation"
-EVENT_CONVERSATION_FINISHED = "extended_openai_conversation.conversation.finished"
+EVENT_AUTOMATION_REGISTERED = "automation_registered_via_extended_gemini_conversation"
+EVENT_CONVERSATION_FINISHED = "extended_gemini_conversation.conversation.finished"
 
 CONF_PROMPT = "prompt"
-DEFAULT_PROMPT = """You are a voice assistant for Home Assistant.
+DEFAULT_PROMPT = """Home Assistant voice assistant. Respond naturally in plain text, 1-2 sentences max. No parentheses or symbolic notation.
 
-Answer in plain text only.
-Respond naturally as a voice assistant.
-Prefer a single sentence; use up to 2-3 sentences only when truly necessary.
-Do not use parentheses or symbolic notation; integrate clarifications naturally using words.
+**Action Rules:**
+- Info queries: Execute immediately if intent is clear
+- State changes: Execute immediately if device + action + value are explicit; confirm if ANY ambiguity (device unclear, value missing, or multiple interpretations possible)
+- Follow-up refinements: When user responds to your proposal with specifics/adjustments, treat as confirmation and execute
 
-For smart home interactions, follow this decision flow strictly:
+**Data Sources:**
+- Current device states are in CSV tables below - use directly, don't retrieve again
+- Call tools ONLY for: (a) data not in CSV, or (b) adjustable parameters when proposing changes to already-appropriate states
 
-0. Action classification
-   Distinguish between two types of actions:
-   A. Information retrieval
-      - These do NOT change any device state
-      - Execute immediately when user intent is clear
-      - Only ask for clarification if the request is genuinely ambiguous
-   B. State-changing actions
-      - These DO change device state
-      - Execute immediately when user explicitly specifies the device and the exact action with clear values
-      - Require confirmation only when the request is ambiguous or lacks specific values
-      - If you have already proposed an action and the user responds with a specification or refinement, treat this as explicit confirmation and execute immediately
+**Confirmation Guidelines:**
+When confirming:
+1. Check CSV first: propose specific device from available options
+2. If device state already matches intent, retrieve current parameters to propose relative adjustment
+3. Use familiar units/values (temperature, brightness %) in proposals; avoid technical units
+4. Binary states: omit current state in question (action implies it)
+5. Single concrete action only - await explicit approval
 
-1. Intent understanding
-   Determine whether the user is requesting information retrieval or a state-changing action.
-   Consider conversation context: if you recently proposed an action, the user's response may be confirming, refining, or rejecting that proposal.
+**General knowledge:** Answer from internal knowledge only.
 
-2. Immediate execution
-   Execute immediately when:
-   - User requests information retrieval with clear intent
-   - User explicitly specifies both the device and the exact action or target value for state-changing actions
-   - User responds to your proposal with a clear confirmation or specification
-   After successful execution, provide brief confirmation and stop.
+Time: {{now()}}
+Area: {{area_id(current_device_id)}}
 
-3. Use provided state information intelligently
-   The current state of all devices is already provided in the CSV tables below.
-   For information available in the provided CSV:
-   - Always use this information directly
-   - Do NOT use tools to retrieve information that is already provided
-   For information NOT available in the provided CSV:
-   - If your response requires additional data beyond what is provided in the CSV, use available tools to retrieve that information
-   - Only retrieve additional information when necessary
-
-4. Context-aware proposal logic
-   When the user's intent requires clarification or lacks specific values:
-   a) Examine the provided CSV to identify devices relevant to the user's intent and their current states
-   b) Determine if the intent can be satisfied by changing device states shown in the CSV:
-      - If the required action is a simple state change but the target is ambiguous, propose a specific option
-   c) If the relevant devices are already in an appropriate state for the intent, or if proposing a meaningful adjustment requires knowing current parameter values:
-      - Retrieve the relevant adjustable parameters using available tools
-      - Use the current parameter values to propose a contextually appropriate adjustment
-      - The proposal should be relative to the current value, not an arbitrary target
-      - If parameters are already at their limits for the user's goal, inform the user
-   d) Propose one minimal and reasonable adjustment based on complete information
-   e) Always end with a confirmation question; never trigger execution
-
-5. State reference in confirmation questions
-   When asking for confirmation:
-   - Determine whether to include specific numeric values based on everyday familiarity:
-     * If the unit or value is something people routinely use in daily conversation and can intuitively understand without specialized knowledge, include the number
-     * If the unit is technical, abstract, or rarely discussed in everyday settings, use relative descriptive language instead without mentioning specific values
-   - For binary states: Omit the current state as the proposed action implies it
-   - Keep confirmation questions concise and natural
-   - Propose a single concrete action and await explicit user approval
-
-When referring to the smart home state,
-use only the information provided below or retrieved through allowed tools.
-
-For general knowledge questions not related to the home,
-answer truthfully using internal knowledge only.
-
-Current Time: {{now()}}
-Current Area: {{area_id(current_device_id)}}
-
-An overview of the areas and the available devices:
+Devices by area:
 {%- set area_entities = namespace(mapping={}) %}
-{%- for entity in extended_openai.exposed_entities() %}
+{%- for entity in extended_gemini.exposed_entities() %}
     {%- set current_area_id = area_id(entity.entity_id) or "etc" %}
     {%- set entities = (area_entities.mapping.get(current_area_id) or []) + [entity] %}
     {%- set area_entities.mapping = dict(area_entities.mapping, **{current_area_id: entities}) -%}
@@ -120,19 +71,19 @@ An overview of the areas and the available devices:
 {{user_input.extra_system_prompt | default('', true)}}
 """
 CONF_CHAT_MODEL = "chat_model"
-DEFAULT_CHAT_MODEL = "gpt-5-mini"
+DEFAULT_CHAT_MODEL = "gemini-2.5-flash"
 
 MODEL_PARAMETER_SUPPORT = (
-    {"pattern": r"^gpt-5-(mini|nano)", "unsupported_params": {"top_p"}},
+    {"pattern": r"^gemini-", "unsupported_params": set()},
 )
 
 MODEL_TOKEN_PARAMETER_SUPPORT = (
     {
-        "pattern": r"(^|-)(gpt-4o|gpt-5|o1|o3|o4)",
-        "token_param": "max_completion_tokens",
+        "pattern": r"gemini",
+        "token_param": "max_output_tokens",
     },
 )
-DEFAULT_TOKEN_PARAM = "max_tokens"
+DEFAULT_TOKEN_PARAM = "max_output_tokens"
 CONF_MAX_TOKENS = "max_tokens"
 DEFAULT_MAX_TOKENS = 500
 CONF_TOP_P = "top_p"
@@ -240,12 +191,12 @@ CONTEXT_TRUNCATE_STRATEGIES = [{"key": "clear", "label": "Clear All Messages"}]
 CONF_CONTEXT_TRUNCATE_STRATEGY = "context_truncate_strategy"
 DEFAULT_CONTEXT_TRUNCATE_STRATEGY = CONTEXT_TRUNCATE_STRATEGIES[0]["key"]
 
-# Service Tier options (for GPT-5 models)
+# Service Tier options (for advanced Gemini models)
 CONF_SERVICE_TIER = "service_tier"
 DEFAULT_SERVICE_TIER = "flex"
 SERVICE_TIER_OPTIONS = ["auto", "default", "flex", "priority"]
 
-# Reasoning Effort options (for o1, o3, o4, gpt-5 models)
+# Reasoning Effort options (for advanced Gemini models)
 CONF_REASONING_EFFORT = "reasoning_effort"
 DEFAULT_REASONING_EFFORT = "low"
 REASONING_EFFORT_OPTIONS = ["low", "medium", "high"]
@@ -259,7 +210,7 @@ CONF_ADVANCED_OPTIONS = "advanced_options"
 DEFAULT_ADVANCED_OPTIONS = False
 
 # Model-specific parameter configurations
-# Default configuration for standard models (gpt-4, gpt-4o, etc.)
+# Default configuration for Gemini models
 DEFAULT_MODEL_CONFIG = {
     "supports_top_p": True,
     "supports_temperature": True,
@@ -273,16 +224,16 @@ DEFAULT_MODEL_CONFIG = {
 # Each entry: {"pattern": regex_string, "config": config_dict}
 # Patterns are matched in order; first match wins
 MODEL_CONFIG_PATTERNS = [
-    # Reasoning models (o1, o3, o4, gpt-5, etc.)
+    # All Gemini models use the same configuration
     {
-        "pattern": r"^o[1-4]|^gpt-5",
+        "pattern": r"^gemini",
         "config": {
-            "supports_top_p": False,
-            "supports_temperature": False,
-            "supports_max_tokens": False,
-            "supports_max_completion_tokens": True,
-            "supports_reasoning_effort": True,
-            "supports_service_tier": True,
+            "supports_top_p": True,
+            "supports_temperature": True,
+            "supports_max_tokens": True,
+            "supports_max_completion_tokens": False,
+            "supports_reasoning_effort": False,
+            "supports_service_tier": False,
         },
     },
 ]

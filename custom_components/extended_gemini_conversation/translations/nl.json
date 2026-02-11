@@ -1,19 +1,19 @@
 {
     "config": {
         "error": {
-            "cannot_connect": "Failed to connect",
-            "invalid_auth": "Invalid authentication",
-            "unknown": "Unexpected error"
+            "cannot_connect": "Verbinden mislukt",
+            "invalid_auth": "Ongeldige authenticatie",
+            "unknown": "Onverwachte fout"
         },
         "step": {
             "user": {
                 "data": {
-                    "name": "Name",
-                    "api_key": "API Key",
-                    "base_url": "Base Url",
-                    "api_version": "Api Version",
+                    "name": "Naam",
+                    "api_key": "API Sleutel",
+                    "base_url": "Basis URL",
+                    "api_version": "API Version",
                     "organization": "Organization",
-                    "skip_authentication": "Skip Authentication",
+                    "skip_authentication": "Authenticatie overslaan",
                     "api_provider": "Api Provider"
                 }
             }
@@ -29,12 +29,12 @@
             "step": {
                 "init": {
                     "data": {
-                        "max_tokens": "Maximum tokens to return in response",
+                        "max_tokens": "Maximale aantal tokens dat mag worden gegenereerd",
                         "model": "Completion Model",
-                        "prompt": "Prompt Template",
-                        "max_function_calls_per_conversation": "Maximum function calls per conversation",
-                        "functions": "Functions",
-                        "attach_username": "Attach Username to Message",
+                        "prompt": "Prompt Sjabloon",
+                        "max_function_calls_per_conversation": "Maximale keren functies mogen worden aangeroepen per conversatie",
+                        "functions": "Functies",
+                        "attach_username": "Gebruikersnaam aan bericht toevoegen",
                         "context_threshold": "Context Threshold",
                         "context_truncate_strategy": "Context truncation strategy when exceeded threshold",
                         "advanced_options": "Advanced Options"
@@ -44,7 +44,7 @@
                 "advanced": {
                     "title": "Advanced Options",
                     "data": {
-                        "temperature": "Temperature",
+                        "temperature": "Temperatuur",
                         "top_p": "Top P",
                         "reasoning_effort": "Reasoning effort",
                         "service_tier": "Service tier"
@@ -91,7 +91,7 @@
                 "model": {
                     "name": "Model",
                     "description": "The model",
-                    "example": "gpt-4.1-mini"
+                    "example": "gemini-2.5-flash"
                 },
                 "prompt": {
                     "name": "Prompt",
@@ -118,15 +118,15 @@
                     "description": "The config entry to update."
                 },
                 "api_key": {
-                    "name": "API Key",
+                    "name": "API Sleutel",
                     "description": "The API key."
                 },
                 "base_url": {
-                    "name": "Base Url",
+                    "name": "Basis URL",
                     "description": "The base URL."
                 },
                 "api_version": {
-                    "name": "Api Version",
+                    "name": "API Version",
                     "description": "The API version."
                 },
                 "organization": {
@@ -134,7 +134,7 @@
                     "description": "The organization."
                 },
                 "skip_authentication": {
-                    "name": "Skip Authentication",
+                    "name": "Authenticatie overslaan",
                     "description": "Skip authentication."
                 },
                 "api_provider": {
