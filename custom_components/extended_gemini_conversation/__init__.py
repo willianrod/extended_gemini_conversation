@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 
-import google.generativeai as genai
+from google import genai
 
 from homeassistant.config_entries import ConfigEntry, ConfigSubentry
 from homeassistant.const import CONF_API_KEY, Platform
@@ -32,7 +32,7 @@ _LOGGER = logging.getLogger(__name__)
 PLATFORMS = [Platform.CONVERSATION, Platform.AI_TASK]
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
-type ExtendedOpenAIConfigEntry = ConfigEntry[genai]
+type ExtendedOpenAIConfigEntry = ConfigEntry[genai.Client]
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:

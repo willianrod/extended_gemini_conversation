@@ -70,8 +70,6 @@ async def async_setup_services(hass: HomeAssistant, config: ConfigType) -> None:
     async def query_image(call: ServiceCall) -> ServiceResponse:
         """Query an image with Gemini."""
         try:
-            import google.generativeai as genai
-            
             model_name = call.data["model"]
             
             # Convert images to Gemini format
@@ -87,20 +85,20 @@ async def async_setup_services(hass: HomeAssistant, config: ConfigType) -> None:
             if entry is None:
                 raise HomeAssistantError("Config entry not found")
 
-            # Create Gemini model
-            model = genai.GenerativeModel(model_name)
+            # Use existing client from runtime_data
+            client = entry.runtime_data
             
-            # Generate content with images
-            response = await hass.async_add_executor_job(
-                lambda: model.generate_content(
-                    [call.data["prompt"], *image_parts],
-                    generation_config={"max_output_tokens": call.data["max_tokens"]}
-                )
+            # Generate content with images using the async API
+            response = await client.aio.models.generate_content(
+                model=model_name,
+                contents=[call.data["prompt"], *image_parts],
+                config={"max_output_tokens": call.data["max_tokens"]},
             )
             
-            _LOGGER.info("Response: %s", response.text if hasattr(response, 'text') else response)
+            response_text = response.text if response.text else str(response)
+            _LOGGER.info("Response: %s", response_text)
             
-            return {"text": response.text if hasattr(response, 'text') else str(response)}
+            return {"text": response_text}
         except Exception as err:
             raise HomeAssistantError(f"Error generating response: {err}") from err
 
