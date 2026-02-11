@@ -1,20 +1,19 @@
-"""Constants for the Extended OpenAI Conversation integration."""
+"""Constants for the Extended Gemini Conversation integration."""
 
 DOMAIN = "extended_openai_conversation"
-DEFAULT_NAME = "Extended OpenAI Conversation"
-DEFAULT_CONVERSATION_NAME = "Extended OpenAI Conversation"
-DEFAULT_AI_TASK_NAME = "Extended OpenAI AI Task"
+DEFAULT_NAME = "Extended Gemini Conversation"
+DEFAULT_CONVERSATION_NAME = "Extended Gemini Conversation"
+DEFAULT_AI_TASK_NAME = "Extended Gemini AI Task"
 
 CONF_ORGANIZATION = "organization"
 CONF_BASE_URL = "base_url"
-DEFAULT_CONF_BASE_URL = "https://api.openai.com/v1"
+DEFAULT_CONF_BASE_URL = "https://generativelanguage.googleapis.com"
 CONF_API_VERSION = "api_version"
 CONF_SKIP_AUTHENTICATION = "skip_authentication"
 DEFAULT_SKIP_AUTHENTICATION = False
 CONF_API_PROVIDER = "api_provider"
 API_PROVIDERS = [
-    {"key": "openai", "label": "OpenAI"},
-    {"key": "azure", "label": "Azure OpenAI"},
+    {"key": "google", "label": "Google Gemini"},
 ]
 DEFAULT_API_PROVIDER = API_PROVIDERS[0]["key"]
 
@@ -120,19 +119,19 @@ An overview of the areas and the available devices:
 {{user_input.extra_system_prompt | default('', true)}}
 """
 CONF_CHAT_MODEL = "chat_model"
-DEFAULT_CHAT_MODEL = "gpt-5-mini"
+DEFAULT_CHAT_MODEL = "gemini-1.5-flash"
 
 MODEL_PARAMETER_SUPPORT = (
-    {"pattern": r"^gpt-5-(mini|nano)", "unsupported_params": {"top_p"}},
+    {"pattern": r"^gemini-", "unsupported_params": set()},
 )
 
 MODEL_TOKEN_PARAMETER_SUPPORT = (
     {
-        "pattern": r"(^|-)(gpt-4o|gpt-5|o1|o3|o4)",
-        "token_param": "max_completion_tokens",
+        "pattern": r"gemini",
+        "token_param": "max_output_tokens",
     },
 )
-DEFAULT_TOKEN_PARAM = "max_tokens"
+DEFAULT_TOKEN_PARAM = "max_output_tokens"
 CONF_MAX_TOKENS = "max_tokens"
 DEFAULT_MAX_TOKENS = 500
 CONF_TOP_P = "top_p"
@@ -259,7 +258,7 @@ CONF_ADVANCED_OPTIONS = "advanced_options"
 DEFAULT_ADVANCED_OPTIONS = False
 
 # Model-specific parameter configurations
-# Default configuration for standard models (gpt-4, gpt-4o, etc.)
+# Default configuration for Gemini models
 DEFAULT_MODEL_CONFIG = {
     "supports_top_p": True,
     "supports_temperature": True,
@@ -273,16 +272,16 @@ DEFAULT_MODEL_CONFIG = {
 # Each entry: {"pattern": regex_string, "config": config_dict}
 # Patterns are matched in order; first match wins
 MODEL_CONFIG_PATTERNS = [
-    # Reasoning models (o1, o3, o4, gpt-5, etc.)
+    # All Gemini models use the same configuration
     {
-        "pattern": r"^o[1-4]|^gpt-5",
+        "pattern": r"^gemini",
         "config": {
-            "supports_top_p": False,
-            "supports_temperature": False,
-            "supports_max_tokens": False,
-            "supports_max_completion_tokens": True,
-            "supports_reasoning_effort": True,
-            "supports_service_tier": True,
+            "supports_top_p": True,
+            "supports_temperature": True,
+            "supports_max_tokens": True,
+            "supports_max_completion_tokens": False,
+            "supports_reasoning_effort": False,
+            "supports_service_tier": False,
         },
     },
 ]

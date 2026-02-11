@@ -1,11 +1,10 @@
-"""The OpenAI Conversation integration."""
+"""The Gemini Conversation integration."""
 
 from __future__ import annotations
 
 import logging
 
-from openai import AsyncClient
-from openai._exceptions import AuthenticationError, OpenAIError
+import google.generativeai as genai
 
 from homeassistant.config_entries import ConfigEntry, ConfigSubentry
 from homeassistant.const import CONF_API_KEY, Platform
@@ -33,11 +32,11 @@ _LOGGER = logging.getLogger(__name__)
 PLATFORMS = [Platform.CONVERSATION, Platform.AI_TASK]
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
-type ExtendedOpenAIConfigEntry = ConfigEntry[AsyncClient]
+type ExtendedOpenAIConfigEntry = ConfigEntry[genai]
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Set up OpenAI Conversation."""
+    """Set up Gemini Conversation."""
     await async_migrate_integration(hass)
     await async_setup_services(hass, config)
     return True
@@ -46,7 +45,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 async def async_setup_entry(
     hass: HomeAssistant, entry: ExtendedOpenAIConfigEntry
 ) -> bool:
-    """Set up OpenAI Conversation from a config entry."""
+    """Set up Gemini Conversation from a config entry."""
 
     try:
         client = await get_authenticated_client(
@@ -60,10 +59,8 @@ async def async_setup_entry(
             ),
             api_provider=entry.data.get(CONF_API_PROVIDER, DEFAULT_API_PROVIDER),
         )
-    except AuthenticationError as err:
-        _LOGGER.error("Invalid API key: %s", err)
-        return False
-    except OpenAIError as err:
+    except Exception as err:
+        _LOGGER.error("Invalid API key or connection error: %s", err)
         raise ConfigEntryNotReady(err) from err
 
     entry.runtime_data = client
@@ -76,7 +73,7 @@ async def async_setup_entry(
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Unload OpenAI."""
+    """Unload Gemini."""
     await async_unload_templates(hass)
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 

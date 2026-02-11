@@ -1,4 +1,4 @@
-"""Config flow for OpenAI Conversation integration."""
+"""Config flow for Gemini Conversation integration."""
 
 from __future__ import annotations
 
@@ -6,7 +6,6 @@ import logging
 import types
 from typing import Any
 
-from openai._exceptions import APIConnectionError, AuthenticationError
 import voluptuous as vol
 import yaml
 
@@ -83,7 +82,7 @@ _LOGGER = logging.getLogger(__name__)
 
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
-        vol.Optional(CONF_NAME, default="ChatGPT"): str,
+        vol.Optional(CONF_NAME, default="Gemini"): str,
         vol.Required(CONF_API_KEY): str,
         vol.Optional(CONF_BASE_URL, default=DEFAULT_CONF_BASE_URL): str,
         vol.Optional(CONF_API_VERSION): str,
