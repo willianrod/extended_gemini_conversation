@@ -1,4 +1,4 @@
-"""AI Task integration for Extended OpenAI Conversation."""
+"""AI Task integration for Extended Gemini Conversation."""
 
 from __future__ import annotations
 
@@ -43,7 +43,7 @@ class ExtendedOpenAITaskEntity(
     ai_task.AITaskEntity,
     ExtendedOpenAIBaseLLMEntity,
 ):
-    """Extended OpenAI AI Task entity."""
+    """Extended Gemini AI Task entity."""
 
     def __init__(
         self, entry: ExtendedOpenAIConfigEntry, subentry: ConfigSubentry

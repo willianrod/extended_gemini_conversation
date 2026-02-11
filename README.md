@@ -1,19 +1,19 @@
-# Extended OpenAI Conversation
+# Extended Gemini Conversation
 This is custom component of Home Assistant.
 
-Derived from [OpenAI Conversation](https://www.home-assistant.io/integrations/openai_conversation/) with some new features such as call-service.
+Derived from [Extended OpenAI Conversation](https://github.com/jekalmin/extended_openai_conversation) adapted to work with Google's Gemini API with some new features such as call-service.
 
 ## Additional Features
 - Ability to call service of Home Assistant
 - Ability to create automation
 - Ability to get data from external API or web page
 - Ability to retrieve state history of entities
-- Option to pass the current user's name to OpenAI via the user message context
+- Option to pass the current user's name to Gemini via the user message context
 
 ## How it works
-Extended OpenAI Conversation uses OpenAI API's feature of [function calling](https://platform.openai.com/docs/guides/function-calling) to call service of Home Assistant.
+Extended Gemini Conversation uses Google Gemini API's feature of [function calling](https://ai.google.dev/gemini-api/docs/function-calling) to call service of Home Assistant.
 
-Since OpenAI models already know how to call service of Home Assistant in general, you just have to let model know what devices you have by [exposing entities](https://github.com/jekalmin/extended_openai_conversation#preparation)
+Since Gemini models already know how to call service of Home Assistant in general, you just have to let model know what devices you have by [exposing entities](https://github.com/willianrod/extended_gemini_conversation#preparation)
 
 ## Installation
 1. Install via registering as a custom repository of HACS or by copying `extended_openai_conversation` folder into `<config directory>/custom_components`
@@ -21,11 +21,10 @@ Since OpenAI models already know how to call service of Home Assistant in genera
 3. Go to Settings > Devices & Services.
 4. In the bottom right corner, select the Add Integration button.
 5. Follow the instructions on screen to complete the setup (API Key is required).
-    - [Generating an API Key](https://www.home-assistant.io/integrations/openai_conversation/#generate-an-api-key)
-    - Specify "Base Url" if using OpenAI compatible servers like Azure OpenAI (also with APIM), LocalAI, otherwise leave as it is.
+    - [Generating an API Key](https://aistudio.google.com/app/apikey)
 6. Go to Settings > [Voice Assistants](https://my.home-assistant.io/redirect/voice_assistants/).
 7. Click to edit Assistant (named "Home Assistant" by default).
-8. Select "Extended OpenAI Conversation" from "Conversation agent" tab.
+8. Select "Extended Gemini Conversation" from "Conversation agent" tab.
     <details>
 
     <summary>guide image</summary>
@@ -55,14 +54,14 @@ https://github.com/jekalmin/extended_openai_conversation/assets/2917984/64ba656e
 ## Configuration
 ### Options
 By clicking a button from Edit Assist, Options can be customized.<br/>
-Options include [OpenAI Conversation](https://www.home-assistant.io/integrations/openai_conversation/) options and two new options. 
+Options include conversation options and custom function configurations. 
 
-- `Attach Username`: Pass the active user's name (if applicable) to OpenAI via the message payload. Currently, this only applies to conversations through the UI or REST API.
+- `Attach Username`: Pass the active user's name (if applicable) to Gemini via the message payload. Currently, this only applies to conversations through the UI or REST API.
 
 - `Maximum Function Calls Per Conversation`: limit the number of function calls in a single conversation.
 (Sometimes function is called over and over again, possibly running into infinite loop) 
 - `Functions`: A list of mappings of function spec to function.
-  - `spec`: Function which would be passed to [functions](https://platform.openai.com/docs/api-reference/chat/create#chat-create-functions) of [chat API](https://platform.openai.com/docs/api-reference/chat/create).
+  - `spec`: Function which would be passed to [function declarations](https://ai.google.dev/gemini-api/docs/function-calling) of Gemini API.
   - `function`: function that will be called.
 
 
@@ -137,7 +136,7 @@ Below is a default configuration of functions.
 ```
 
 #### Specification (Spec)
-Specification is a [function schema](https://platform.openai.com/docs/guides/function-calling#defining-functions) defined by openai which will be passed to LLM as a tool.
+Specification is a [function declaration](https://ai.google.dev/gemini-api/docs/function-calling) defined by Google which will be passed to Gemini as a tool.
 
 Reserved Parameters:
 - `delay`: If specified, function will be executed in background after a delay. See [example](https://github.com/jekalmin/extended_openai_conversation/tree/main/examples/function/timer).
@@ -166,8 +165,8 @@ Then you will be able to let OpenAI call your function.
 ### 1. template
 #### 1-1. Get current weather
 
-For real world example, see [weather](https://github.com/jekalmin/extended_openai_conversation/tree/main/examples/function/weather).<br/>
-This is just an example from [OpenAI documentation](https://platform.openai.com/docs/guides/function-calling/common-use-cases)
+For real world example, see [weather](https://github.com/willianrod/extended_gemini_conversation/tree/main/examples/function/weather).<br/>
+This is just an example from [Google's documentation](https://ai.google.dev/gemini-api/docs/function-calling)
 
 ```yaml
 - spec:
