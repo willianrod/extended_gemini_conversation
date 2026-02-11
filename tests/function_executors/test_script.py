@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 # Import FunctionExecutors and test helpers
-from custom_components.extended_openai_conversation.helpers import (
+from custom_components.extended_gemini_conversation.helpers import (
     ScriptFunctionExecutor,
     get_function_executor,
 )
@@ -32,7 +32,7 @@ class TestScriptFunctionExecutorYaml:
         processed_function = function_executor.to_arguments(func_def["function"])
 
         with patch(
-            "custom_components.extended_openai_conversation.helpers.Script"
+            "custom_components.extended_gemini_conversation.helpers.Script"
         ) as mock_script_class:
             # Setup mock
             mock_script = AsyncMock()
@@ -60,7 +60,7 @@ class TestScriptFunctionExecutorYaml:
         processed_function = function_executor.to_arguments(func_def["function"])
 
         with patch(
-            "custom_components.extended_openai_conversation.helpers.Script"
+            "custom_components.extended_gemini_conversation.helpers.Script"
         ) as mock_script_class:
             mock_script = AsyncMock()
             mock_result = MagicMock()

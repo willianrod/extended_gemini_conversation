@@ -3,7 +3,7 @@
 import pytest
 
 # Import FunctionExecutors and test helpers
-from custom_components.extended_openai_conversation.helpers import (
+from custom_components.extended_gemini_conversation.helpers import (
     TemplateFunctionExecutor,
     get_function_executor,
 )

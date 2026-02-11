@@ -22,9 +22,9 @@ This integration has been converted from Extended OpenAI Conversation to work wi
 10. Restart Home Assistant
 
 ### Method 2: Manual Installation
-1. Download the `custom_components/extended_openai_conversation` folder from this repository
+1. Download the `custom_components/extended_gemini_conversation` folder from this repository
 2. Copy the entire folder to your Home Assistant's `custom_components` directory
-   - The path should be: `<config directory>/custom_components/extended_openai_conversation`
+   - The path should be: `<config directory>/custom_components/extended_gemini_conversation`
 3. Restart Home Assistant
 
 ## Configuration
@@ -90,4 +90,4 @@ For issues, questions, or feature requests, please visit:
 https://github.com/willianrod/extended_gemini_conversation/issues
 
 ## Credits
-This integration is derived from [Extended OpenAI Conversation](https://github.com/jekalmin/extended_openai_conversation) by jekalmin.
+This integration is derived from [Extended OpenAI Conversation](https://github.com/jekalmin/extended_gemini_conversation) by jekalmin.

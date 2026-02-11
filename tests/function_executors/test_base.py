@@ -6,13 +6,13 @@ import pytest
 import voluptuous as vol
 
 # Import FunctionExecutors
-from custom_components.extended_openai_conversation.exceptions import (
+from custom_components.extended_gemini_conversation.exceptions import (
     EntityNotExposed,
     EntityNotFound,
     FunctionNotFound,
     InvalidFunction,
 )
-from custom_components.extended_openai_conversation.helpers import (
+from custom_components.extended_gemini_conversation.helpers import (
     NativeFunctionExecutor,
     ScriptFunctionExecutor,
     TemplateFunctionExecutor,

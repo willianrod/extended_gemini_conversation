@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 # Import FunctionExecutors and test helpers
-from custom_components.extended_openai_conversation.helpers import (
+from custom_components.extended_gemini_conversation.helpers import (
     NativeFunctionExecutor,
     get_function_executor,
 )
@@ -175,7 +175,7 @@ class TestNativeFunctionExecutorYaml:
         self, hass, executor, exposed_entities, llm_context
     ):
         """Test service execution fails when service does not exist."""
-        from custom_components.extended_openai_conversation.helpers import (
+        from custom_components.extended_gemini_conversation.helpers import (
             ServiceNotFound,
         )
 
@@ -209,7 +209,7 @@ class TestNativeGetHistory:
         """Test getting entity history with composite function."""
         from unittest.mock import MagicMock, patch
 
-        from custom_components.extended_openai_conversation.helpers import (
+        from custom_components.extended_gemini_conversation.helpers import (
             CompositeFunctionExecutor,
         )
 
@@ -233,11 +233,11 @@ class TestNativeGetHistory:
 
         with (
             patch(
-                "custom_components.extended_openai_conversation.helpers.recorder.get_instance",
+                "custom_components.extended_gemini_conversation.helpers.recorder.get_instance",
                 return_value=mock_recorder_instance,
             ),
             patch(
-                "custom_components.extended_openai_conversation.helpers.recorder.util.session_scope"
+                "custom_components.extended_gemini_conversation.helpers.recorder.util.session_scope"
             ),
         ):
             result = await executor.execute(
@@ -277,7 +277,7 @@ class TestNativeGetStatistics:
         )
 
         with patch(
-            "custom_components.extended_openai_conversation.helpers.recorder.get_instance",
+            "custom_components.extended_gemini_conversation.helpers.recorder.get_instance",
             return_value=mock_recorder_instance,
         ):
             result = await executor.execute(
@@ -310,7 +310,7 @@ class TestNativeGetStatistics:
         )
 
         with patch(
-            "custom_components.extended_openai_conversation.helpers.recorder.get_instance",
+            "custom_components.extended_gemini_conversation.helpers.recorder.get_instance",
             return_value=mock_recorder_instance,
         ):
             result = await executor.execute(

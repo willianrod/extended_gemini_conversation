@@ -78,7 +78,7 @@ The migration from OpenAI to Google Gemini is **100% complete**. All OpenAI refe
 
 The integration is ready for production use:
 
-1. **Domain**: `extended_openai_conversation` (kept for compatibility)
+1. **Domain**: `extended_gemini_conversation` (kept for compatibility)
 2. **Name**: "Extended Gemini Conversation"
 3. **API**: Google Gemini API exclusively
 4. **Default Model**: gemini-2.5-flash

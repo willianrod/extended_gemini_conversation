@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 # Import FunctionExecutors and test helpers
-from custom_components.extended_openai_conversation.helpers import (
+from custom_components.extended_gemini_conversation.helpers import (
     RestFunctionExecutor,
     get_function_executor,
 )
@@ -32,7 +32,7 @@ class TestRestFunctionExecutorYaml:
         processed_function = function_executor.to_arguments(func_def["function"])
 
         with patch(
-            "custom_components.extended_openai_conversation.helpers.rest.create_rest_data_from_config"
+            "custom_components.extended_gemini_conversation.helpers.rest.create_rest_data_from_config"
         ) as mock_create_rest:
             mock_rest_data = AsyncMock()
             mock_rest_data.async_update = AsyncMock()

@@ -162,7 +162,7 @@ Successfully converted Extended OpenAI Conversation to Extended Gemini Conversat
 ✅ Token usage tracking
 
 ### What Changed
-⚠️ Domain name: Still `extended_openai_conversation` for compatibility
+⚠️ Domain name: Still `extended_gemini_conversation` for compatibility
 ⚠️ Function spec format: Same structure, different internal handling
 ⚠️ Model names: Must use Gemini model names (e.g., gemini-2.5-flash)
 ⚠️ System prompts: Handled via `system_instruction` parameter
