@@ -239,12 +239,12 @@ CONTEXT_TRUNCATE_STRATEGIES = [{"key": "clear", "label": "Clear All Messages"}]
 CONF_CONTEXT_TRUNCATE_STRATEGY = "context_truncate_strategy"
 DEFAULT_CONTEXT_TRUNCATE_STRATEGY = CONTEXT_TRUNCATE_STRATEGIES[0]["key"]
 
-# Service Tier options (for GPT-5 models)
+# Service Tier options (for advanced Gemini models)
 CONF_SERVICE_TIER = "service_tier"
 DEFAULT_SERVICE_TIER = "flex"
 SERVICE_TIER_OPTIONS = ["auto", "default", "flex", "priority"]
 
-# Reasoning Effort options (for o1, o3, o4, gpt-5 models)
+# Reasoning Effort options (for advanced Gemini models)
 CONF_REASONING_EFFORT = "reasoning_effort"
 DEFAULT_REASONING_EFFORT = "low"
 REASONING_EFFORT_OPTIONS = ["low", "medium", "high"]

@@ -91,7 +91,7 @@
                 "model": {
                     "name": "Model",
                     "description": "The model",
-                    "example": "gpt-4.1-mini"
+                    "example": "gemini-2.5-flash"
                 },
                 "prompt": {
                     "name": "Prompt",

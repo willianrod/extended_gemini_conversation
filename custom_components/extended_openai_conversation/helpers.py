@@ -86,7 +86,7 @@ def get_model_config(model: str) -> dict[str, bool]:
                 else DEFAULT_MODEL_CONFIG
             )
 
-    # Default configuration for standard models (gpt-4, gpt-4o, etc.)
+    # Default configuration for Gemini models
     return DEFAULT_MODEL_CONFIG
 
 

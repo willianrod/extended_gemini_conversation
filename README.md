@@ -160,7 +160,7 @@ Reserved Parameters:
 This is an example of configuration of functions.
 
 Copy and paste below yaml configuration into "Functions".<br/>
-Then you will be able to let OpenAI call your function. 
+Then you will be able to let Gemini call your function. 
 
 ### 1. template
 #### 1-1. Get current weather
@@ -244,7 +244,7 @@ In order to accomplish "send it to Line" like [example3](https://github.com/jeka
 
 #### 2-3. Get events from calendar
 
-In order to pass result of calling service to OpenAI, set response variable to `_function_result`. 
+In order to pass result of calling service to Gemini, set response variable to `_function_result`. 
 
 ```yaml
 - spec:

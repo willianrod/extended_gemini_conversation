@@ -86,7 +86,7 @@ def _adjust_schema(schema: dict[str, Any]) -> None:
 def _format_structured_output(
     schema: vol.Schema, llm_api: llm.APIInstance | None
 ) -> dict[str, Any]:
-    """Format the schema to be compatible with OpenAI API."""
+    """Format the schema to be compatible with Gemini API."""
     result: dict[str, Any] = convert(
         schema,
         custom_serializer=(

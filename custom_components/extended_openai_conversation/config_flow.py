@@ -343,7 +343,7 @@ class ExtendedOpenAISubentryFlowHandler(ConfigSubentryFlow):
                 )
             )
 
-        # Add service_tier if supported (o3, o4, gpt-5 models)
+        # Add service_tier if supported by model
         if model_config.get("supports_service_tier"):
             schema[
                 vol.Optional(
@@ -570,7 +570,7 @@ class ExtendedOpenAIAITaskSubentryFlowHandler(ConfigSubentryFlow):
                 )
             )
 
-        # Add service_tier if supported (o3, o4, gpt-5 models)
+        # Add service_tier if supported by model
         if model_config.get("supports_service_tier"):
             schema[
                 vol.Optional(

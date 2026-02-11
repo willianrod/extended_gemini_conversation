@@ -91,7 +91,7 @@
                 "model": {
                     "name": "Μοντέλο",
                     "description": "Το μοντέλο",
-                    "example": "gpt-4.1-mini"
+                    "example": "gemini-2.5-flash"
                 },
                 "prompt": {
                     "name": "Προτροπή",
