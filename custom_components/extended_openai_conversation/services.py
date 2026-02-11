@@ -97,7 +97,6 @@ async def async_setup_services(hass: HomeAssistant, config: ConfigType) -> None:
                     generation_config={"max_output_tokens": call.data["max_tokens"]}
                 )
             )
-            )
             
             _LOGGER.info("Response: %s", response.text if hasattr(response, 'text') else response)
             
