@@ -50,7 +50,7 @@ For the assistant to control your devices, you need to expose entities:
 3. Only exposed entities will be available to the Gemini conversation agent
 
 ## Default Model
-The integration uses `gemini-2.0-flash-exp` by default, which provides:
+The integration uses `gemini-2.5-flash` by default, which provides:
 - Fast response times
 - Good reasoning capabilities
 - Function calling support
