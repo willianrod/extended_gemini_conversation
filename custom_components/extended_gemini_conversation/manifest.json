@@ -1,5 +1,5 @@
 {
-  "domain": "extended_openai_conversation",
+  "domain": "extended_gemini_conversation",
   "name": "Extended Gemini Conversation",
   "codeowners": [
     "@jekalmin"

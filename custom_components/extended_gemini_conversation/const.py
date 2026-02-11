@@ -1,6 +1,6 @@
 """Constants for the Extended Gemini Conversation integration."""
 
-DOMAIN = "extended_openai_conversation"
+DOMAIN = "extended_gemini_conversation"
 DEFAULT_NAME = "Extended Gemini Conversation"
 DEFAULT_CONVERSATION_NAME = "Extended Gemini Conversation"
 DEFAULT_AI_TASK_NAME = "Extended Gemini AI Task"
@@ -17,8 +17,8 @@ API_PROVIDERS = [
 ]
 DEFAULT_API_PROVIDER = API_PROVIDERS[0]["key"]
 
-EVENT_AUTOMATION_REGISTERED = "automation_registered_via_extended_openai_conversation"
-EVENT_CONVERSATION_FINISHED = "extended_openai_conversation.conversation.finished"
+EVENT_AUTOMATION_REGISTERED = "automation_registered_via_extended_gemini_conversation"
+EVENT_CONVERSATION_FINISHED = "extended_gemini_conversation.conversation.finished"
 
 CONF_PROMPT = "prompt"
 DEFAULT_PROMPT = """You are a voice assistant for Home Assistant.
@@ -95,7 +95,7 @@ Current Area: {{area_id(current_device_id)}}
 
 An overview of the areas and the available devices:
 {%- set area_entities = namespace(mapping={}) %}
-{%- for entity in extended_openai.exposed_entities() %}
+{%- for entity in extended_gemini.exposed_entities() %}
     {%- set current_area_id = area_id(entity.entity_id) or "etc" %}
     {%- set entities = (area_entities.mapping.get(current_area_id) or []) + [entity] %}
     {%- set area_entities.mapping = dict(area_entities.mapping, **{current_area_id: entities}) -%}

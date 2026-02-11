@@ -1,4 +1,4 @@
-"""Template functions for Extended OpenAI Conversation."""
+"""Template functions for Extended Gemini Conversation."""
 
 from __future__ import annotations
 
@@ -18,24 +18,24 @@ _LOGGER = logging.getLogger(__name__)
 
 DATA_TEMPLATE_MANAGER = "template_manager"
 
-TEMPLATE_EXTENDED_OPENAI = "extended_openai"
+TEMPLATE_EXTENDED_GEMINI = "extended_gemini"
 TEMPLATE_GET_ENTITIES = "exposed_entities"
 
 
 async def async_setup_templates(hass: HomeAssistant) -> bool:
-    """Set up template functions for Extended OpenAI Conversation."""
+    """Set up template functions for Extended Gemini Conversation."""
     hass.data.setdefault(DOMAIN, {})
     if hass.data[DOMAIN].get(DATA_TEMPLATE_MANAGER):
         return True
 
-    manager = ExtendedOpenAITemplateManager(hass)
+    manager = ExtendedGeminiTemplateManager(hass)
     hass.data[DOMAIN][DATA_TEMPLATE_MANAGER] = manager
     await manager.async_setup()
     return True
 
 
 async def async_unload_templates(hass: HomeAssistant) -> bool:
-    """Unload template functions for Extended OpenAI Conversation."""
+    """Unload template functions for Extended Gemini Conversation."""
     if len(hass.config_entries.async_entries(DOMAIN)) == 1:
         manager = hass.data.get(DOMAIN, {}).get(DATA_TEMPLATE_MANAGER)
         if manager:
@@ -44,13 +44,13 @@ async def async_unload_templates(hass: HomeAssistant) -> bool:
     return True
 
 
-class ExtendedOpenAITemplateManager:
+class ExtendedGeminiTemplateManager:
     """Class to manage template functions."""
 
     def __init__(self, hass: HomeAssistant) -> None:
         """Initialize the template manager."""
         self.hass = hass
-        self._extended_openai = {TEMPLATE_GET_ENTITIES: self._get_exposed_entities}
+        self._extended_gemini = {TEMPLATE_GET_ENTITIES: self._get_exposed_entities}
         self._original_init = None
 
     def _get_exposed_entities(self) -> list[dict[str, Any]]:
@@ -58,12 +58,12 @@ class ExtendedOpenAITemplateManager:
 
     async def async_setup(self) -> None:
         """Set up the template functions."""
-        _LOGGER.debug("Setting up Extended OpenAI Conversation template functions")
+        _LOGGER.debug("Setting up Extended Gemini Conversation template functions")
 
         # Register in existing environments
         if "template.environment" in self.hass.data:
-            self.hass.data["template.environment"].globals[TEMPLATE_EXTENDED_OPENAI] = (
-                self._extended_openai
+            self.hass.data["template.environment"].globals[TEMPLATE_EXTENDED_GEMINI] = (
+                self._extended_gemini
             )
 
         # Patch TemplateEnvironment
@@ -79,15 +79,15 @@ class ExtendedOpenAITemplateManager:
             if self._original_init:
                 self._original_init(template_env_self, hass, limited, strict, log_fn)  # type: ignore[unreachable]
             if hass:
-                template_env_self.globals[TEMPLATE_EXTENDED_OPENAI] = (
-                    self._extended_openai
+                template_env_self.globals[TEMPLATE_EXTENDED_GEMINI] = (
+                    self._extended_gemini
                 )
 
         TemplateEnvironment.__init__ = template_environment_init  # type: ignore[method-assign,assignment]
 
     async def async_on_unload(self) -> None:
         """Tear down the template functions."""
-        _LOGGER.debug("Tearing down Extended OpenAI Conversation template functions")
+        _LOGGER.debug("Tearing down Extended Gemini Conversation template functions")
 
         if self._original_init:
             TemplateEnvironment.__init__ = self._original_init  # type: ignore[unreachable]
@@ -95,5 +95,5 @@ class ExtendedOpenAITemplateManager:
 
         if "template.environment" in self.hass.data:
             self.hass.data["template.environment"].globals.pop(
-                TEMPLATE_EXTENDED_OPENAI, None
+                TEMPLATE_EXTENDED_GEMINI, None
             )
