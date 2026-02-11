@@ -119,7 +119,7 @@ An overview of the areas and the available devices:
 {{user_input.extra_system_prompt | default('', true)}}
 """
 CONF_CHAT_MODEL = "chat_model"
-DEFAULT_CHAT_MODEL = "gemini-1.5-flash"
+DEFAULT_CHAT_MODEL = "gemini-2.0-flash-exp"
 
 MODEL_PARAMETER_SUPPORT = (
     {"pattern": r"^gemini-", "unsupported_params": set()},

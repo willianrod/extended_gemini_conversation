@@ -1,4 +1,4 @@
-"""Services for the extended openai conversation component."""
+"""Services for the extended gemini conversation component."""
 
 import base64
 import logging
@@ -6,7 +6,6 @@ import mimetypes
 from pathlib import Path
 from urllib.parse import urlparse
 
-from openai._exceptions import OpenAIError
 import voluptuous as vol
 
 from homeassistant.const import CONF_API_KEY
@@ -39,7 +38,7 @@ QUERY_IMAGE_SCHEMA = vol.Schema(
                 "integration": DOMAIN,
             }
         ),
-        vol.Required("model", default="gpt-4.1-mini"): cv.string,
+        vol.Required("model", default="gemini-2.0-flash-exp"): cv.string,
         vol.Required("prompt"): cv.string,
         vol.Required("images"): vol.All(cv.ensure_list, [{"url": cv.string}]),
         vol.Optional("max_tokens", default=300): cv.positive_int,
@@ -66,45 +65,45 @@ _LOGGER = logging.getLogger(__package__)
 
 
 async def async_setup_services(hass: HomeAssistant, config: ConfigType) -> None:
-    """Set up services for the extended openai conversation component."""
+    """Set up services for the extended gemini conversation component."""
 
     async def query_image(call: ServiceCall) -> ServiceResponse:
-        """Query an image."""
+        """Query an image with Gemini."""
         try:
-            model = call.data["model"]
-            images = [
-                {"type": "image_url", "image_url": to_image_param(hass, image)}
-                for image in call.data["images"]
-            ]
+            import google.generativeai as genai
+            
+            model_name = call.data["model"]
+            
+            # Convert images to Gemini format
+            image_parts = []
+            for image in call.data["images"]:
+                image_data = to_image_data(hass, image)
+                # Gemini expects image data in PIL.Image or raw bytes format
+                image_parts.append(image_data)
 
-            messages = [
-                {
-                    "role": "user",
-                    "content": [{"type": "text", "text": call.data["prompt"]}, *images],
-                }
-            ]
-            _LOGGER.info("Prompt for %s: %s", model, messages)
+            _LOGGER.info("Prompt for %s with %d images", model_name, len(image_parts))
 
             entry = hass.config_entries.async_get_entry(call.data["config_entry"])
             if entry is None:
                 raise HomeAssistantError("Config entry not found")
 
-            client = entry.runtime_data
-
-            token_param = get_token_param_for_model(model)
-            token_kwargs = {token_param: call.data["max_tokens"]}
-
-            response = await client.chat.completions.create(
-                model=model,
-                messages=messages,
-                **token_kwargs,
+            # Create Gemini model
+            model = genai.GenerativeModel(model_name)
+            
+            # Generate content with images
+            response = await hass.async_add_executor_job(
+                lambda: model.generate_content(
+                    [call.data["prompt"], *image_parts],
+                    generation_config={"max_output_tokens": call.data["max_tokens"]}
+                )
             )
-            response_dict: dict = response.model_dump()
-            _LOGGER.info("Response %s", response_dict)
-        except OpenAIError as err:
-            raise HomeAssistantError(f"Error generating image: {err}") from err
-
-        return response_dict
+            )
+            
+            _LOGGER.info("Response: %s", response.text if hasattr(response, 'text') else response)
+            
+            return {"text": response.text if hasattr(response, 'text') else str(response)}
+        except Exception as err:
+            raise HomeAssistantError(f"Error generating response: {err}") from err
 
     async def change_config(call: ServiceCall) -> None:
         """Change configuration."""
@@ -135,12 +134,9 @@ async def async_setup_services(hass: HomeAssistant, config: ConfigType) -> None:
 
         base_url = new_data.get(CONF_BASE_URL)
         if base_url == DEFAULT_CONF_BASE_URL:
-            # Do not set base_url if using OpenAI for case of OpenAI's base_url change
+            # Use default Gemini base URL
             base_url = None
             new_data.pop(CONF_BASE_URL)
-
-        if new_data.get(CONF_API_PROVIDER) == "azure" and not base_url:
-            raise HomeAssistantError("Azure OpenAI requires a custom base URL.")
 
         await get_authenticated_client(
             hass=hass,
@@ -170,12 +166,16 @@ async def async_setup_services(hass: HomeAssistant, config: ConfigType) -> None:
     )
 
 
-def to_image_param(hass: HomeAssistant, image: dict) -> dict:
+def to_image_data(hass: HomeAssistant, image: dict) -> bytes:
     """Convert url to base64 encoded image if local."""
     url = image["url"]
 
+    url = image["url"]
+
     if urlparse(url).scheme in cv.EXTERNAL_URL_PROTOCOL_SCHEMA_LIST:
-        return image
+        # For external URLs, return the raw bytes (Gemini can handle URLs directly)
+        # But for now, we'll just return the URL string
+        return url.encode()
 
     if not hass.config.is_allowed_path(url):
         raise HomeAssistantError(
@@ -189,8 +189,9 @@ def to_image_param(hass: HomeAssistant, image: dict) -> dict:
     if mime_type is None or not mime_type.startswith("image"):
         raise HomeAssistantError(f"`{url}` is not an image")
 
-    image["url"] = f"data:{mime_type};base64,{encode_image(url)}"
-    return image
+    # Read and return image bytes for Gemini
+    with open(url, "rb") as image_file:
+        return image_file.read()
 
 
 def encode_image(image_path: str) -> str:

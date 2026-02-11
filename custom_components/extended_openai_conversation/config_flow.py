@@ -136,12 +136,9 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> None:
     api_provider = data.get(CONF_API_PROVIDER)
 
     if base_url == DEFAULT_CONF_BASE_URL:
-        # Do not set base_url if using OpenAI for case of OpenAI's base_url change
+        # Use default Gemini base URL
         base_url = None
         data.pop(CONF_BASE_URL)
-
-    if api_provider == "azure" and not base_url:
-        raise HomeAssistantError("Azure OpenAI requires a custom base URL.")
 
     await get_authenticated_client(
         hass=hass,
@@ -155,7 +152,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> None:
 
 
 class ExtendedOpenAIConversationConfigFlow(ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for OpenAI Conversation."""
+    """Handle a config flow for Gemini Conversation."""
 
     VERSION = 2
 
@@ -215,7 +212,7 @@ class ExtendedOpenAIConversationConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class ExtendedOpenAISubentryFlowHandler(ConfigSubentryFlow):
-    """Flow for managing OpenAI subentries."""
+    """Flow for managing Gemini subentries."""
 
     options: dict[str, Any]
     _temp_data: dict[str, Any] | None = None
