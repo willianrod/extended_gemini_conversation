@@ -313,7 +313,7 @@ class ExtendedOpenAIBaseLLMEntity(Entity):
             if chunk.prompt_feedback or not chunk.candidates:
                 reason = (
                     chunk.prompt_feedback.block_reason_message
-                    if chunk.prompt_feedback
+                    if chunk.prompt_feedback and chunk.prompt_feedback.block_reason_message
                     else "unknown"
                 )
                 raise HomeAssistantError(
