@@ -1,4 +1,4 @@
-"""Base entity for Extended OpenAI Conversation."""
+"""Base entity for Extended Gemini Conversation."""
 
 from __future__ import annotations
 
@@ -7,12 +7,13 @@ import json
 import logging
 from typing import TYPE_CHECKING, Any
 
-from openai import AsyncClient, AsyncStream
-from openai.types.chat import (
-    ChatCompletionAssistantMessageParam,
-    ChatCompletionChunk,
-    ChatCompletionMessageParam,
-    ChatCompletionToolParam,
+import google.generativeai as genai
+from google.generativeai.types import (
+    GenerateContentResponse,
+    Tool,
+    FunctionDeclaration,
+    Content,
+    Part,
 )
 import orjson
 import voluptuous as vol
@@ -59,30 +60,21 @@ _LOGGER = logging.getLogger(__name__)
 MAX_TOOL_ITERATIONS = 10
 
 
-def _shorten_tool_call_id(tool_call_id: str) -> str:
-    """Shorten tool call ID to exactly 9 alphanumeric characters as Mistral requires."""
-    import hashlib
-
-    return hashlib.sha256(tool_call_id.encode()).hexdigest()[:9]
-
-
 def _adjust_schema(schema: dict[str, Any]) -> None:
-    """Adjust the schema to be compatible with OpenAI API."""
+    """Adjust the schema to be compatible with Gemini API."""
+    # Gemini has different schema requirements than OpenAI
+    # For now, we'll keep the schema mostly as-is
     if schema["type"] == "object":
-        schema.setdefault("strict", True)
-        schema.setdefault("additionalProperties", False)
         if "properties" not in schema:
             return
 
+        # Ensure required fields are present
         if "required" not in schema:
             schema["required"] = []
 
-        # Ensure all properties are required
+        # Process nested properties
         for prop, prop_info in schema["properties"].items():
             _adjust_schema(prop_info)
-            if prop not in schema["required"]:
-                prop_info["type"] = [prop_info["type"], "null"]
-                schema["required"].append(prop)
 
     elif schema["type"] == "array":
         if "items" not in schema:
@@ -107,57 +99,63 @@ def _format_structured_output(
     return result
 
 
-def _convert_content_to_param(
+def _convert_content_to_gemini(
     chat_content: list[conversation.Content],
-    shorten_tool_call_id: bool = False,
-) -> list[ChatCompletionMessageParam]:
-    """Convert chat log content to OpenAI message format."""
-    messages: list[ChatCompletionMessageParam] = []
-
+) -> tuple[str, list[Content]]:
+    """Convert chat log content to Gemini message format.
+    
+    Returns:
+        A tuple of (system_instruction, history)
+        where system_instruction is the system prompt
+        and history is the list of Content objects for the conversation
+    """
+    system_instruction = ""
+    history: list[Content] = []
+    
     for content in chat_content:
         if content.role == "system":
-            messages.append({"role": "system", "content": content.content})
+            # Gemini uses system_instruction separately
+            system_instruction = content.content
         elif content.role == "user":
-            messages.append({"role": "user", "content": content.content})
+            history.append(Content(
+                role="user",
+                parts=[Part(text=content.content)]
+            ))
         elif content.role == "assistant":
-            msg: ChatCompletionAssistantMessageParam = {"role": "assistant"}
+            parts = []
             if content.content:
-                msg["content"] = content.content
+                parts.append(Part(text=content.content))
             if content.tool_calls:
-                msg["tool_calls"] = [
-                    {
-                        "id": _shorten_tool_call_id(tool_call.id)
-                        if shorten_tool_call_id
-                        else tool_call.id,
-                        "type": "function",
-                        "function": {
-                            "name": tool_call.tool_name,
-                            "arguments": json.dumps(tool_call.tool_args),
-                        },
-                    }
-                    for tool_call in content.tool_calls
-                ]
-            # Some OpenAI-compatible APIs (like Mistral) reject empty tool_calls arrays
-            # Remove tool_calls field if it's an empty array to maintain compatibility
-            if msg.get("tool_calls") == []:
-                msg.pop("tool_calls", None)
-            messages.append(msg)
+                # Gemini handles function calls differently
+                # We'll convert them to function call parts
+                for tool_call in content.tool_calls:
+                    parts.append(Part(
+                        function_call=genai.protos.FunctionCall(
+                            name=tool_call.tool_name,
+                            args=tool_call.tool_args
+                        )
+                    ))
+            history.append(Content(
+                role="model",  # Gemini uses "model" instead of "assistant"
+                parts=parts
+            ))
         elif content.role == "tool_result":
-            messages.append(
-                {
-                    "role": "tool",
-                    "tool_call_id": _shorten_tool_call_id(content.tool_call_id)
-                    if shorten_tool_call_id
-                    else content.tool_call_id,
-                    "content": orjson.dumps(content.tool_result).decode(),
-                }
-            )
-
-    return messages
+            # Gemini handles function responses
+            history.append(Content(
+                role="function",
+                parts=[Part(
+                    function_response=genai.protos.FunctionResponse(
+                        name=content.tool_call_id,
+                        response=content.tool_result
+                    )
+                )]
+            ))
+    
+    return system_instruction, history
 
 
 class ExtendedOpenAIBaseLLMEntity(Entity):
-    """Extended OpenAI base entity."""
+    """Extended Gemini base entity."""
 
     _attr_has_entity_name = True
     _attr_name = None
@@ -172,14 +170,14 @@ class ExtendedOpenAIBaseLLMEntity(Entity):
         self._attr_device_info = dr.DeviceInfo(
             identifiers={(DOMAIN, subentry.subentry_id)},
             name=subentry.title,
-            manufacturer="OpenAI",
+            manufacturer="Google",
             model=subentry.data.get(CONF_CHAT_MODEL, DEFAULT_CHAT_MODEL),
             entry_type=dr.DeviceEntryType.SERVICE,
         )
 
     @property
-    def _client(self) -> AsyncClient:
-        """Return the OpenAI client."""
+    def _client(self) -> genai:
+        """Return the Gemini client."""
         return self.entry.runtime_data
 
     async def _async_handle_chat_log(
@@ -191,244 +189,212 @@ class ExtendedOpenAIBaseLLMEntity(Entity):
         structure_name: str | None = None,
         structure: vol.Schema | None = None,
     ) -> None:
-        """Generate an answer for the chat log with streaming support."""
+        """Generate an answer for the chat log with Gemini streaming support."""
         options = self.subentry.data
-        model = options.get(CONF_CHAT_MODEL, DEFAULT_CHAT_MODEL)
+        model_name = options.get(CONF_CHAT_MODEL, DEFAULT_CHAT_MODEL)
         max_function_calls = options.get(
             CONF_MAX_FUNCTION_CALLS_PER_CONVERSATION,
             DEFAULT_MAX_FUNCTION_CALLS_PER_CONVERSATION,
         )
-        shorten_tool_call_id = options.get(
-            CONF_SHORTEN_TOOL_CALL_ID,
-            DEFAULT_SHORTEN_TOOL_CALL_ID,
-        )
 
         # Get model-specific configuration
-        model_config = get_model_config(model)
+        model_config = get_model_config(model_name)
 
-        messages = _convert_content_to_param(chat_log.content, shorten_tool_call_id)
+        # Convert messages to Gemini format
+        system_instruction, history = _convert_content_to_gemini(chat_log.content)
 
-        # Build tools list from custom functions
-        tools: list[ChatCompletionToolParam] = [
-            ChatCompletionToolParam(
-                type="function",
-                function=func_spec["spec"],
-            )
-            for func_spec in custom_functions
-        ]
+        # Build tools list from custom functions for Gemini
+        tools = []
+        if custom_functions:
+            function_declarations = []
+            for func_spec in custom_functions:
+                spec = func_spec["spec"]
+                # Convert OpenAI function spec to Gemini FunctionDeclaration
+                function_declarations.append(
+                    FunctionDeclaration(
+                        name=spec["name"],
+                        description=spec.get("description", ""),
+                        parameters=spec.get("parameters", {})
+                    )
+                )
+            if function_declarations:
+                tools = [Tool(function_declarations=function_declarations)]
 
-        # Build API parameters based on model configuration
-        api_kwargs: dict[str, Any] = {
-            "model": model,
-            "stream": True,
-            "stream_options": {"include_usage": True},
-        }
-
-        # Add token limit parameter based on model support
+        # Build generation config
+        generation_config = {}
+        
+        # Add token limit parameter
         max_tokens = options.get(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS)
-        if model_config["supports_max_completion_tokens"]:
-            api_kwargs["max_completion_tokens"] = max_tokens
-        elif model_config["supports_max_tokens"]:
-            api_kwargs["max_tokens"] = max_tokens
+        if model_config["supports_max_tokens"]:
+            generation_config["max_output_tokens"] = max_tokens
 
         # Add top_p if supported
         if model_config["supports_top_p"]:
-            api_kwargs["top_p"] = options.get(CONF_TOP_P, DEFAULT_TOP_P)
+            generation_config["top_p"] = options.get(CONF_TOP_P, DEFAULT_TOP_P)
 
         # Add temperature if supported
         if model_config["supports_temperature"]:
-            api_kwargs["temperature"] = options.get(
+            generation_config["temperature"] = options.get(
                 CONF_TEMPERATURE, DEFAULT_TEMPERATURE
             )
 
-        # Add reasoning_effort if supported (o1, o3, o4, gpt-5 models)
-        if model_config.get("supports_reasoning_effort"):
-            api_kwargs["reasoning_effort"] = options.get(
-                CONF_REASONING_EFFORT, DEFAULT_REASONING_EFFORT
-            )
+        _LOGGER.info("Prompt for %s with system: %s, history length: %d", 
+                    model_name, system_instruction[:100] if system_instruction else "", len(history))
 
-        # Add service_tier if supported (o3, o4, gpt-5 models)
-        if model_config.get("supports_service_tier"):
-            api_kwargs["service_tier"] = options.get(
-                CONF_SERVICE_TIER, DEFAULT_SERVICE_TIER
-            )
-
-        # Add structured output format if provided
-        if structure is not None:
-            api_kwargs["response_format"] = {
-                "type": "json_schema",
-                "json_schema": {
-                    "name": slugify(structure_name),
-                    "strict": True,
-                    "schema": _format_structured_output(structure, chat_log.llm_api),
-                },
-            }
-
-        # Add tools if available
-        tool_kwargs: dict[str, Any] = {}
-        if tools:
-            tool_kwargs["tools"] = tools
-            tool_kwargs["tool_choice"] = "auto"
+        # Create the model with configuration
+        model = genai.GenerativeModel(
+            model_name=model_name,
+            generation_config=generation_config,
+            system_instruction=system_instruction if system_instruction else None,
+            tools=tools if tools else None,
+        )
 
         # To prevent infinite loops, we limit the number of iterations
         for n_requests in range(MAX_TOOL_ITERATIONS):
-            # Update tool_choice based on function call count
-            # -1 means unlimited function calls
-            if tools and max_function_calls >= 0 and n_requests >= max_function_calls:
-                tool_kwargs["tool_choice"] = "none"
+            _LOGGER.debug("Request iteration %d", n_requests)
 
-            _LOGGER.info("Prompt for %s: %s", model, json.dumps(messages))
-
-            stream = await self._client.chat.completions.create(
-                messages=messages,
-                **api_kwargs,
-                **tool_kwargs,
-            )
-
-            # Process stream and collect tool calls
-            pending_tool_calls: list[llm.ToolInput] = []
-
-            async for content in chat_log.async_add_delta_content_stream(
-                self.entity_id, self._transform_stream(chat_log, stream)
-            ):
-                if (
-                    isinstance(content, conversation.AssistantContent)
-                    and content.tool_calls
+            # Start a chat session with history
+            chat = model.start_chat(history=history[:-1] if history else [])
+            
+            # Get the last user message
+            last_message = history[-1] if history else Content(role="user", parts=[Part(text="")])
+            
+            # Generate content with streaming
+            try:
+                response = await self.hass.async_add_executor_job(
+                    lambda: chat.send_message(
+                        last_message.parts,
+                        stream=True
+                    )
+                )
+                
+                # Process streaming response
+                pending_tool_calls: list[llm.ToolInput] = []
+                
+                async for content in chat_log.async_add_delta_content_stream(
+                    self.entity_id, self._transform_gemini_stream(chat_log, response)
                 ):
-                    pending_tool_calls.extend(content.tool_calls)
+                    if (
+                        isinstance(content, conversation.AssistantContent)
+                        and content.tool_calls
+                    ):
+                        pending_tool_calls.extend(content.tool_calls)
 
-            if pending_tool_calls:
-                _LOGGER.info("Response Tool Calls %s", pending_tool_calls)
+                if pending_tool_calls:
+                    _LOGGER.info("Response Tool Calls %s", pending_tool_calls)
 
-            # Execute custom functions
-            for tool_call in pending_tool_calls:
-                custom_func = next(
-                    (
-                        f
-                        for f in (custom_functions)
-                        if f["spec"]["name"] == tool_call.tool_name
-                    ),
-                    None,
-                )
+                # Execute custom functions
+                for tool_call in pending_tool_calls:
+                    custom_func = next(
+                        (
+                            f
+                            for f in custom_functions
+                            if f["spec"]["name"] == tool_call.tool_name
+                        ),
+                        None,
+                    )
 
-                if custom_func is None:
-                    raise FunctionNotFound(tool_call.tool_name)
+                    if custom_func is None:
+                        raise FunctionNotFound(tool_call.tool_name)
 
-                tool_result_content = await self._execute_custom_function(
-                    custom_func,
-                    tool_call,
-                    llm_context,
-                    exposed_entities,
-                )
+                    tool_result_content = await self._execute_custom_function(
+                        custom_func,
+                        tool_call,
+                        llm_context,
+                        exposed_entities,
+                    )
 
-                chat_log.async_add_assistant_content_without_tools(tool_result_content)
+                    chat_log.async_add_assistant_content_without_tools(tool_result_content)
 
-            # Update messages for next iteration
-            messages = _convert_content_to_param(chat_log.content, shorten_tool_call_id)
+                # Update history for next iteration
+                system_instruction, history = _convert_content_to_gemini(chat_log.content)
 
-            # Check if we need to continue (if there are pending tool results)
-            if not chat_log.unresponded_tool_results:
-                break
+                # Check if we need to continue (if there are pending tool results)
+                if not chat_log.unresponded_tool_results:
+                    break
+                    
+                # Check if we've hit the max function calls limit
+                if max_function_calls >= 0 and n_requests >= max_function_calls:
+                    _LOGGER.warning("Max function calls limit reached")
+                    break
+                    
+            except Exception as err:
+                _LOGGER.error("Error generating content: %s", err, exc_info=True)
+                raise
 
-    async def _transform_stream(
+    async def _transform_gemini_stream(
         self,
         chat_log: conversation.ChatLog,
-        result: AsyncStream[ChatCompletionChunk],
+        response: Any,  # Gemini GenerateContentResponse iterator
     ) -> AsyncGenerator[
         conversation.AssistantContentDeltaDict | conversation.ToolResultContentDeltaDict
     ]:
-        """Transform OpenAI stream to Home Assistant format."""
-        current_tool_calls: dict[int, dict[str, Any]] = {}
+        """Transform Gemini stream to Home Assistant format."""
         first_chunk = True
-
-        async for chunk in result:
-            _LOGGER.debug("Received chunk: %s", chunk)
-
+        total_tokens = 0
+        
+        for chunk in response:
+            _LOGGER.debug("Received Gemini chunk: %s", chunk)
+            
             # Signal new assistant message on first chunk
             if first_chunk:
                 yield {"role": "assistant"}
                 first_chunk = False
-
-            if not chunk.choices:
-                # Track usage from final chunk if available
-                if chunk.usage:
+            
+            # Track usage if available
+            if hasattr(chunk, 'usage_metadata') and chunk.usage_metadata:
+                usage = chunk.usage_metadata
+                if hasattr(usage, 'total_token_count'):
+                    total_tokens = usage.total_token_count
                     chat_log.async_trace(
                         {
                             "stats": {
-                                "input_tokens": chunk.usage.prompt_tokens,
-                                "output_tokens": chunk.usage.completion_tokens,
+                                "input_tokens": getattr(usage, 'prompt_token_count', 0),
+                                "output_tokens": getattr(usage, 'candidates_token_count', 0),
                             }
                         }
                     )
-                    if chunk.usage.total_tokens > self.subentry.data.get(
-                        CONF_CONTEXT_THRESHOLD, DEFAULT_CONTEXT_THRESHOLD
-                    ):
-                        await self._truncate_message_history(chat_log)
-                continue
-
-            choice = chunk.choices[0]
-            delta = choice.delta
-
-            if delta.content:
-                # Ensure content is a string (Mistral might return unexpected types)
-                content_value = delta.content
-                if not isinstance(content_value, str):
-                    _LOGGER.warning(
-                        "Received non-string content from API: %s (type: %s)",
-                        content_value,
-                        type(content_value),
-                    )
-                    content_value = str(content_value) if content_value else ""
-                if content_value:
-                    yield {"content": content_value}
-
-            if delta.tool_calls:
-                for tool_call_delta in delta.tool_calls:
-                    idx = tool_call_delta.index
-                    if idx not in current_tool_calls:
-                        current_tool_calls[idx] = {
-                            "id": tool_call_delta.id or "",
-                            "name": "",
-                            "arguments": "",
-                        }
-
-                    if tool_call_delta.function:
-                        if tool_call_delta.function.name:
-                            current_tool_calls[idx]["name"] = (
-                                tool_call_delta.function.name
-                            )
-                        if tool_call_delta.function.arguments:
-                            current_tool_calls[idx]["arguments"] += (
-                                tool_call_delta.function.arguments
-                            )
-
-            if current_tool_calls and (choice.finish_reason in {"tool_calls", "stop"}):
-                # Yield all accumulated tool calls (marked as external since we handle them ourselves)
-                tool_calls_list = []
-                for idx in sorted(current_tool_calls.keys()):
-                    tool_call = current_tool_calls[idx]
-                    try:
-                        args = json.loads(tool_call["arguments"])
-                    except json.JSONDecodeError as err:
-                        raise ParseArgumentsFailed(tool_call["arguments"]) from err
-                    tool_calls_list.append(
-                        llm.ToolInput(
-                            id=tool_call["id"],
-                            tool_name=tool_call["name"],
-                            tool_args=args,
-                            external=True,  # Mark as external so ChatLog doesn't try to execute
+            
+            # Process candidates
+            if hasattr(chunk, 'candidates') and chunk.candidates:
+                candidate = chunk.candidates[0]
+                
+                if hasattr(candidate, 'content') and candidate.content:
+                    content = candidate.content
+                    
+                    # Process parts
+                    if hasattr(content, 'parts'):
+                        for part in content.parts:
+                            # Handle text content
+                            if hasattr(part, 'text') and part.text:
+                                yield {"content": part.text}
+                            
+                            # Handle function calls
+                            elif hasattr(part, 'function_call') and part.function_call:
+                                fc = part.function_call
+                                tool_call = llm.ToolInput(
+                                    id=fc.name,  # Gemini uses function name as ID
+                                    tool_name=fc.name,
+                                    tool_args=dict(fc.args) if hasattr(fc, 'args') else {},
+                                    external=True,  # Mark as external
+                                )
+                                yield {"tool_calls": [tool_call]}
+                
+                # Check finish reason
+                if hasattr(candidate, 'finish_reason'):
+                    finish_reason = candidate.finish_reason
+                    if finish_reason == 1:  # STOP
+                        break
+                    elif finish_reason == 2:  # MAX_TOKENS
+                        raise TokenLengthExceededError(
+                            self.subentry.data.get(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS)
                         )
-                    )
-                if tool_calls_list:
-                    yield {"tool_calls": tool_calls_list}
-                current_tool_calls.clear()
-            if choice.finish_reason == "length":
-                raise TokenLengthExceededError(
-                    self.subentry.data.get(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS)
-                )
-
-            if choice.finish_reason == "stop":
-                break
+        
+        # Check token threshold after streaming completes
+        if total_tokens > self.subentry.data.get(
+            CONF_CONTEXT_THRESHOLD, DEFAULT_CONTEXT_THRESHOLD
+        ):
+            await self._truncate_message_history(chat_log)
 
     async def _execute_custom_function(
         self,

@@ -1,11 +1,10 @@
-"""Extended OpenAI Conversation agent entity."""
+"""Extended Gemini Conversation agent entity."""
 
 from __future__ import annotations
 
 import logging
 from typing import Any, Literal
 
-from openai import OpenAIError
 import yaml
 
 from homeassistant.components import conversation
@@ -46,7 +45,7 @@ async def async_setup_entry(
     config_entry: ExtendedOpenAIConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Set up the OpenAI Conversation entities."""
+    """Set up the Gemini Conversation entities."""
     for subentry in config_entry.subentries.values():
         if subentry.subentry_type != "conversation":
             continue
@@ -62,7 +61,7 @@ class ExtendedOpenAIAgentEntity(
     conversation.AbstractConversationAgent,
     ExtendedOpenAIBaseLLMEntity,
 ):
-    """Extended OpenAI conversation agent."""
+    """Extended Gemini conversation agent."""
 
     _attr_supports_streaming = True
     _attr_supported_features = ConversationEntityFeature.CONTROL
@@ -130,12 +129,12 @@ class ExtendedOpenAIAgentEntity(
                 exposed_entities=exposed_entities,
                 llm_context=llm_context,
             )
-        except OpenAIError as err:
-            _LOGGER.error(err)
+        except Exception as err:
+            _LOGGER.error("Error with Gemini API: %s", err, exc_info=True)
             intent_response = intent.IntentResponse(language=user_input.language)
             intent_response.async_set_error(
                 intent.IntentResponseErrorCode.UNKNOWN,
-                f"Sorry, I had a problem talking to OpenAI: {err}",
+                f"Sorry, I had a problem talking to Gemini: {err}",
             )
             return conversation.ConversationResult(
                 response=intent_response, conversation_id=user_input.conversation_id

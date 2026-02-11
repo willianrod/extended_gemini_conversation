@@ -172,13 +172,12 @@ class ExtendedOpenAIConversationConfigFlow(ConfigFlow, domain=DOMAIN):
 
         try:
             await validate_input(self.hass, user_input)
-        except APIConnectionError:
-            errors["base"] = "cannot_connect"
-        except AuthenticationError:
-            errors["base"] = "invalid_auth"
-        except Exception:  # pylint: disable=broad-except
-            _LOGGER.exception("Unexpected exception")
-            errors["base"] = "unknown"
+        except Exception as err:  # pylint: disable=broad-except
+            _LOGGER.exception("Unexpected exception: %s", err)
+            if "authentication" in str(err).lower() or "api" in str(err).lower():
+                errors["base"] = "invalid_auth"
+            else:
+                errors["base"] = "cannot_connect"
         else:
             return self.async_create_entry(
                 title=user_input.get(CONF_NAME, DEFAULT_NAME),
