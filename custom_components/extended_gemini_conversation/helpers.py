@@ -14,7 +14,7 @@ from typing import Any
 from urllib import parse
 
 from bs4 import BeautifulSoup
-import google.generativeai as genai
+from google import genai
 import voluptuous as vol
 import yaml
 
@@ -203,25 +203,23 @@ async def get_authenticated_client(
     organization: str | None,
     api_provider: str | None,
     skip_authentication: bool = False,
-) -> genai.GenerativeModel:
+) -> genai.Client:
     """Validate Gemini authentication and return a configured client."""
     
-    # Configure the Gemini client with API key
-    genai.configure(api_key=api_key)
+    # Create the Gemini client with API key (in executor since constructor may do I/O)
+    client = await hass.async_add_executor_job(
+        partial(genai.Client, api_key=api_key)
+    )
     
     if not skip_authentication:
-        # Test authentication by listing models
+        # Test authentication by getting the default model
         try:
-            await hass.async_add_executor_job(
-                partial(genai.list_models)
-            )
+            await client.aio.models.list()
         except Exception as err:
             _LOGGER.error("Failed to authenticate with Gemini API: %s", err)
             raise
     
-    # Return a dummy client - we'll create the actual model instance when needed
-    # This is just to maintain compatibility with the existing structure
-    return genai
+    return client
 
 
 class FunctionExecutor(ABC):

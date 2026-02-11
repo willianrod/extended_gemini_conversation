@@ -7,20 +7,15 @@ import json
 import logging
 from typing import TYPE_CHECKING, Any
 
-import google.generativeai as genai
-from google.generativeai.types import (
-    GenerateContentResponse,
-    Tool,
-    FunctionDeclaration,
-    Content,
-    Part,
-)
+from google import genai
+from google.genai import types as genai_types
 import orjson
 import voluptuous as vol
 from voluptuous_openapi import convert
 
 from homeassistant.components import conversation
 from homeassistant.config_entries import ConfigSubentry
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import device_registry as dr, llm
 from homeassistant.helpers.entity import Entity
 from homeassistant.util import slugify
@@ -101,7 +96,7 @@ def _format_structured_output(
 
 def _convert_content_to_gemini(
     chat_content: list[conversation.Content],
-) -> tuple[str, list[Content]]:
+) -> tuple[str, list[genai_types.Content]]:
     """Convert chat log content to Gemini message format.
     
     Returns:
@@ -110,44 +105,40 @@ def _convert_content_to_gemini(
         and history is the list of Content objects for the conversation
     """
     system_instruction = ""
-    history: list[Content] = []
+    history: list[genai_types.Content] = []
     
     for content in chat_content:
         if content.role == "system":
             # Gemini uses system_instruction separately
             system_instruction = content.content
         elif content.role == "user":
-            history.append(Content(
+            history.append(genai_types.Content(
                 role="user",
-                parts=[Part(text=content.content)]
+                parts=[genai_types.Part(text=content.content)]
             ))
         elif content.role == "assistant":
             parts = []
             if content.content:
-                parts.append(Part(text=content.content))
+                parts.append(genai_types.Part(text=content.content))
             if content.tool_calls:
                 # Gemini handles function calls differently
                 # We'll convert them to function call parts
                 for tool_call in content.tool_calls:
-                    parts.append(Part(
-                        function_call=genai.protos.FunctionCall(
-                            name=tool_call.tool_name,
-                            args=tool_call.tool_args
-                        )
+                    parts.append(genai_types.Part.from_function_call(
+                        name=tool_call.tool_name,
+                        args=tool_call.tool_args
                     ))
-            history.append(Content(
+            history.append(genai_types.Content(
                 role="model",  # Gemini uses "model" instead of "assistant"
                 parts=parts
             ))
         elif content.role == "tool_result":
-            # Gemini handles function responses
-            history.append(Content(
-                role="function",
-                parts=[Part(
-                    function_response=genai.protos.FunctionResponse(
-                        name=content.tool_call_id,
-                        response=content.tool_result
-                    )
+            # Gemini uses role="user" for function responses
+            history.append(genai_types.Content(
+                role="user",
+                parts=[genai_types.Part.from_function_response(
+                    name=content.tool_name,
+                    response=content.tool_result
                 )]
             ))
     
@@ -176,7 +167,7 @@ class ExtendedOpenAIBaseLLMEntity(Entity):
         )
 
     @property
-    def _client(self) -> genai:
+    def _client(self) -> genai.Client:
         """Return the Gemini client."""
         return self.entry.runtime_data
 
@@ -211,41 +202,27 @@ class ExtendedOpenAIBaseLLMEntity(Entity):
                 spec = func_spec["spec"]
                 # Convert OpenAI function spec to Gemini FunctionDeclaration
                 function_declarations.append(
-                    FunctionDeclaration(
+                    genai_types.FunctionDeclaration(
                         name=spec["name"],
                         description=spec.get("description", ""),
                         parameters=spec.get("parameters", {})
                     )
                 )
             if function_declarations:
-                tools = [Tool(function_declarations=function_declarations)]
+                tools = [genai_types.Tool(function_declarations=function_declarations)]
 
         # Build generation config
-        generation_config = {}
-        
-        # Add token limit parameter
         max_tokens = options.get(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS)
-        if model_config["supports_max_tokens"]:
-            generation_config["max_output_tokens"] = max_tokens
-
-        # Add top_p if supported
-        if model_config["supports_top_p"]:
-            generation_config["top_p"] = options.get(CONF_TOP_P, DEFAULT_TOP_P)
-
-        # Add temperature if supported
-        if model_config["supports_temperature"]:
-            generation_config["temperature"] = options.get(
-                CONF_TEMPERATURE, DEFAULT_TEMPERATURE
-            )
 
         _LOGGER.info("Prompt for %s with system: %s, history length: %d", 
                     model_name, system_instruction[:100] if system_instruction else "", len(history))
 
-        # Create the model with configuration
-        model = genai.GenerativeModel(
-            model_name=model_name,
-            generation_config=generation_config,
+        # Build generation config
+        config = genai_types.GenerateContentConfig(
             system_instruction=system_instruction if system_instruction else None,
+            max_output_tokens=max_tokens if model_config["supports_max_tokens"] else None,
+            top_p=options.get(CONF_TOP_P, DEFAULT_TOP_P) if model_config["supports_top_p"] else None,
+            temperature=options.get(CONF_TEMPERATURE, DEFAULT_TEMPERATURE) if model_config["supports_temperature"] else None,
             tools=tools if tools else None,
         )
 
@@ -253,19 +230,15 @@ class ExtendedOpenAIBaseLLMEntity(Entity):
         for n_requests in range(MAX_TOOL_ITERATIONS):
             _LOGGER.debug("Request iteration %d", n_requests)
 
-            # Start a chat session with history
-            chat = model.start_chat(history=history[:-1] if history else [])
+            # Build contents: history minus last message as context, last message as current
+            contents = history if history else [genai_types.Content(role="user", parts=[genai_types.Part(text="")])]
             
-            # Get the last user message
-            last_message = history[-1] if history else Content(role="user", parts=[Part(text="")])
-            
-            # Generate content with streaming
+            # Generate content with streaming using the new async client API
             try:
-                response = await self.hass.async_add_executor_job(
-                    lambda: chat.send_message(
-                        last_message.parts,
-                        stream=True
-                    )
+                response = await self._client.aio.models.generate_content_stream(
+                    model=model_name,
+                    contents=contents,
+                    config=config,
                 )
                 
                 # Process streaming response
@@ -325,7 +298,7 @@ class ExtendedOpenAIBaseLLMEntity(Entity):
     async def _transform_gemini_stream(
         self,
         chat_log: conversation.ChatLog,
-        response: Any,  # Gemini GenerateContentResponse iterator
+        response: Any,  # Gemini AsyncIterator[GenerateContentResponse]
     ) -> AsyncGenerator[
         conversation.AssistantContentDeltaDict | conversation.ToolResultContentDeltaDict
     ]:
@@ -333,8 +306,19 @@ class ExtendedOpenAIBaseLLMEntity(Entity):
         first_chunk = True
         total_tokens = 0
         
-        for chunk in response:
+        async for chunk in response:
             _LOGGER.debug("Received Gemini chunk: %s", chunk)
+
+            # Check for content policy violations
+            if chunk.prompt_feedback or not chunk.candidates:
+                reason = (
+                    chunk.prompt_feedback.block_reason_message
+                    if chunk.prompt_feedback and chunk.prompt_feedback.block_reason_message
+                    else "unknown"
+                )
+                raise HomeAssistantError(
+                    f"Content blocked due to content violations, reason: {reason}"
+                )
             
             # Signal new assistant message on first chunk
             if first_chunk:
@@ -342,53 +326,58 @@ class ExtendedOpenAIBaseLLMEntity(Entity):
                 first_chunk = False
             
             # Track usage if available
-            if hasattr(chunk, 'usage_metadata') and chunk.usage_metadata:
+            if chunk.usage_metadata:
                 usage = chunk.usage_metadata
-                if hasattr(usage, 'total_token_count'):
+                if usage.total_token_count:
                     total_tokens = usage.total_token_count
                     chat_log.async_trace(
                         {
                             "stats": {
-                                "input_tokens": getattr(usage, 'prompt_token_count', 0),
-                                "output_tokens": getattr(usage, 'candidates_token_count', 0),
+                                "input_tokens": usage.prompt_token_count or 0,
+                                "output_tokens": usage.candidates_token_count or 0,
                             }
                         }
                     )
             
-            # Process candidates
-            if hasattr(chunk, 'candidates') and chunk.candidates:
-                candidate = chunk.candidates[0]
+            candidate = chunk.candidates[0]
+
+            # Check finish reason for non-STOP reasons (errors)
+            if (
+                candidate.finish_reason is not None
+                and candidate.finish_reason != "STOP"
+            ):
+                if candidate.finish_reason == "MAX_TOKENS":
+                    raise TokenLengthExceededError(
+                        self.subentry.data.get(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS)
+                    )
+                _LOGGER.error(
+                    "Error in Gemini response: %s",
+                    candidate.finish_reason,
+                )
+                raise HomeAssistantError(
+                    f"Error generating response: {candidate.finish_reason}"
+                )
+
+            response_parts = (
+                candidate.content.parts
+                if candidate.content is not None and candidate.content.parts is not None
+                else []
+            )
+
+            for part in response_parts:
+                # Handle text content
+                if part.text:
+                    yield {"content": part.text}
                 
-                if hasattr(candidate, 'content') and candidate.content:
-                    content = candidate.content
-                    
-                    # Process parts
-                    if hasattr(content, 'parts'):
-                        for part in content.parts:
-                            # Handle text content
-                            if hasattr(part, 'text') and part.text:
-                                yield {"content": part.text}
-                            
-                            # Handle function calls
-                            elif hasattr(part, 'function_call') and part.function_call:
-                                fc = part.function_call
-                                tool_call = llm.ToolInput(
-                                    id=fc.name,  # Gemini uses function name as ID
-                                    tool_name=fc.name,
-                                    tool_args=dict(fc.args) if hasattr(fc, 'args') else {},
-                                    external=True,  # Mark as external
-                                )
-                                yield {"tool_calls": [tool_call]}
-                
-                # Check finish reason
-                if hasattr(candidate, 'finish_reason'):
-                    finish_reason = candidate.finish_reason
-                    if finish_reason == 1:  # STOP
-                        break
-                    elif finish_reason == 2:  # MAX_TOKENS
-                        raise TokenLengthExceededError(
-                            self.subentry.data.get(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS)
-                        )
+                # Handle function calls
+                elif part.function_call:
+                    fc = part.function_call
+                    tool_name = fc.name or ""
+                    tool_call = llm.ToolInput(
+                        tool_name=tool_name,
+                        tool_args=dict(fc.args) if fc.args else {},
+                    )
+                    yield {"tool_calls": [tool_call]}
         
         # Check token threshold after streaming completes
         if total_tokens > self.subentry.data.get(
